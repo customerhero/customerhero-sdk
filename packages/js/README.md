@@ -44,7 +44,7 @@ chat.identify({
 | Option              | Type                              | Description                                                                 |
 | ------------------- | --------------------------------- | --------------------------------------------------------------------------- |
 | `chatbotId`         | `string` (required)               | The chatbot to connect to.                                                  |
-| `apiBase`           | `string`                          | API base URL. Defaults to `https://customerhero.app`.                       |
+| `apiBase`           | `string`                          | API base URL. Defaults to `https://api.customerhero.app`.                   |
 | `primaryColor`      | `string`                          | Accent color override.                                                      |
 | `backgroundColor`   | `string`                          | Chat window background override.                                            |
 | `textColor`         | `string`                          | Text color override.                                                        |

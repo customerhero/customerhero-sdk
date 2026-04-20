@@ -1,5 +1,5 @@
 export const DEFAULTS = {
-  apiBase: "https://customerhero.app",
+  apiBase: "https://api.customerhero.app",
   primaryColor: "#6C3CE1",
   backgroundColor: "#FFFFFF",
   textColor: "#1A1A2E",
