@@ -1,0 +1,75 @@
+{
+  "name": "@customerhero/react",
+  "version": "0.1.0",
+  "description": "React components for embedding the CustomerHero chat widget.",
+  "keywords": [
+    "customerhero",
+    "chat",
+    "chatbot",
+    "customer-support",
+    "widget",
+    "react"
+  ],
+  "homepage": "https://customerhero.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/customerhero/customerhero-sdk.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/customerhero/customerhero-sdk/issues"
+  },
+  "license": "MIT",
+  "author": "CustomerHero",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@customerhero/js": "^0.1.0",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@customerhero/js": "^0.1.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^25.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
