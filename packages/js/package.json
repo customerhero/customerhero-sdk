@@ -1,6 +1,7 @@
 {
   "name": "@customerhero/js",
-  "version": "0.1.0",
+  "version": "0.0.1",
+  "private": false,
   "description": "Framework-agnostic JavaScript client for the CustomerHero chat widget.",
   "keywords": [
     "customerhero",
