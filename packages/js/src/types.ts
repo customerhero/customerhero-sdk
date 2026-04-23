@@ -39,11 +39,41 @@ export interface ResolvedConfig {
   suggestedMessages: string[];
 }
 
+// Source citation emitted inline in bot replies as `[1]`, `[2]` markers and
+// attached to the message as structured data so the renderer can turn the
+// markers into clickable links.
+export interface MessageSource {
+  index: number;
+  title: string;
+  url?: string;
+  dataSourceId: string;
+  heading?: string;
+}
+
+// Structured part of a bot reply beyond the plain-text `content`. Rendered
+// alongside the bubble. The union is open-ended — unknown types should be
+// ignored by older clients.
+export type MessageBlock = {
+  type: "quick_replies";
+  options: string[];
+};
+
 export interface ChatMessage {
   /** Message ID from the API (only present for bot messages) */
   id?: string;
   role: "user" | "bot";
   content: string;
+  /** Source citations referenced inline with `[n]` markers. Bot only. */
+  sources?: MessageSource[];
+  /** Structured blocks (quick-reply chips, etc.) rendered with the bubble. */
+  blocks?: MessageBlock[];
+  /**
+   * Follow-up questions the customer might plausibly ask next. Rendered as
+   * tappable chips under the most recent bot message only.
+   */
+  suggestions?: string[];
+  /** True while this message is still receiving streaming tokens. */
+  streaming?: boolean;
 }
 
 export type MessageRating = "positive" | "negative";

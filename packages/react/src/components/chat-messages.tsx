@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { ChatMessage, MessageRating, TranslateFn } from "@customerhero/js";
+import type {
+  ChatMessage,
+  MessageBlock,
+  MessageRating,
+  TranslateFn,
+} from "@customerhero/js";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
+import { renderMarkdown } from "../markdown/render";
 
 function MessageRatingButtons({
   messageId,
@@ -44,6 +50,7 @@ function MessageRatingButtons({
         disabled={rated !== null}
         style={buttonStyle(rated === "positive")}
         title={t("helpful")}
+        aria-label={t("helpful")}
       >
         <svg
           width="14"
@@ -64,6 +71,7 @@ function MessageRatingButtons({
         disabled={rated !== null}
         style={buttonStyle(rated === "negative")}
         title={t("not_helpful")}
+        aria-label={t("not_helpful")}
       >
         <svg
           width="14"
@@ -117,22 +125,130 @@ function AnimatedMessage({
   return <div style={style}>{children}</div>;
 }
 
+function ChipRow({
+  options,
+  onSelect,
+  primaryColor,
+  reduced,
+}: {
+  options: string[];
+  onSelect: (value: string) => void;
+  primaryColor: string;
+  reduced: boolean;
+}) {
+  const chip: CSSProperties = {
+    background: "none",
+    border: "1px solid #e0e0e0",
+    borderRadius: 20,
+    padding: "6px 12px",
+    fontSize: 13,
+    color: "#333",
+    cursor: "pointer",
+    textAlign: "left",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    transition: reduced ? "none" : "border-color 0.15s, background 0.15s",
+  };
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 6,
+        marginTop: 6,
+      }}
+    >
+      {options.map((text) => (
+        <button
+          key={text}
+          style={chip}
+          onClick={() => onSelect(text)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = primaryColor;
+            e.currentTarget.style.background = `${primaryColor}08`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "#e0e0e0";
+            e.currentTarget.style.background = "none";
+          }}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BlockRenderer({
+  block,
+  onSend,
+  primaryColor,
+  reduced,
+}: {
+  block: MessageBlock;
+  onSend: (value: string) => void;
+  primaryColor: string;
+  reduced: boolean;
+}) {
+  switch (block.type) {
+    case "quick_replies":
+      return (
+        <ChipRow
+          options={block.options}
+          onSelect={onSend}
+          primaryColor={primaryColor}
+          reduced={reduced}
+        />
+      );
+  }
+}
+
+// A blinking caret appended to a bot bubble while tokens are still streaming.
+function StreamingCursor({ reduced }: { reduced: boolean }) {
+  return (
+    <>
+      <style>
+        {`@keyframes ch-caret-blink {
+          0%, 50% { opacity: 1; }
+          50.01%, 100% { opacity: 0; }
+        }`}
+      </style>
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 2,
+          height: "1em",
+          marginLeft: 2,
+          verticalAlign: "text-bottom",
+          background: "#777",
+          animation: reduced ? "none" : "ch-caret-blink 1s step-start infinite",
+        }}
+      />
+    </>
+  );
+}
+
 function Message({
   message,
   config,
   onRate,
+  onSend,
   hasConversation,
   t,
   animate,
   reduced,
+  showSuggestions,
 }: {
   message: ChatMessage;
   config: { primaryColor: string; textColor: string };
   onRate: (messageId: string, rating: MessageRating) => Promise<void>;
+  onSend: (value: string) => void;
   hasConversation: boolean;
   t: TranslateFn;
   animate: boolean;
   reduced: boolean;
+  showSuggestions: boolean;
 }) {
   const isUser = message.role === "user";
 
@@ -155,9 +271,41 @@ function Message({
         }),
   };
 
+  const linkColor = isUser ? "#ffffff" : config.primaryColor;
+
   return (
     <AnimatedMessage isUser={isUser} animate={animate} reduced={reduced}>
-      <div style={bubbleStyle}>{message.content}</div>
+      <div style={bubbleStyle}>
+        {isUser ? (
+          message.content
+        ) : (
+          <>
+            {renderMarkdown(message.content, {
+              sources: message.sources,
+              linkColor,
+            })}
+            {message.streaming && <StreamingCursor reduced={reduced} />}
+          </>
+        )}
+      </div>
+      {!isUser &&
+        message.blocks?.map((block, i) => (
+          <BlockRenderer
+            key={i}
+            block={block}
+            onSend={onSend}
+            primaryColor={config.primaryColor}
+            reduced={reduced}
+          />
+        ))}
+      {!isUser && showSuggestions && message.suggestions?.length ? (
+        <ChipRow
+          options={message.suggestions}
+          onSelect={onSend}
+          primaryColor={config.primaryColor}
+          reduced={reduced}
+        />
+      ) : null}
       {message.role === "bot" && message.id && hasConversation && (
         <MessageRatingButtons
           messageId={message.id}
@@ -211,8 +359,16 @@ function TypingDots({ reduced }: { reduced: boolean }) {
 }
 
 export function ChatMessages() {
-  const { messages, isLoading, error, config, conversationId, rateMessage, t } =
-    useChat();
+  const {
+    messages,
+    isLoading,
+    error,
+    config,
+    conversationId,
+    rateMessage,
+    sendMessage,
+    t,
+  } = useChat();
   const reduced = useReducedMotion();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
@@ -235,6 +391,16 @@ export function ChatMessages() {
     prevMessageCount.current = messages.length;
   }, [messages.length]);
 
+  // Follow-up suggestions only render on the most recent bot message, and
+  // only once it has finished streaming.
+  let lastBotIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "bot") {
+      lastBotIndex = i;
+      break;
+    }
+  }
+
   const containerStyle: CSSProperties = {
     flex: 1,
     overflowY: "auto",
@@ -244,6 +410,12 @@ export function ChatMessages() {
     gap: 12,
   };
 
+  // Show the typing indicator while waiting for the first token only.
+  // Once a bot bubble exists for this turn, its streaming cursor takes over.
+  const lastMsg = messages[messages.length - 1];
+  const waitingForFirstToken =
+    isLoading && (lastMsg?.role !== "bot" || lastMsg.streaming !== true);
+
   return (
     <div style={containerStyle}>
       {messages.map((msg, i) => (
@@ -252,15 +424,20 @@ export function ChatMessages() {
           message={msg}
           config={config}
           onRate={rateMessage}
+          onSend={sendMessage}
           hasConversation={conversationId !== null}
           t={t}
           animate={i >= newStartIndex}
           reduced={reduced}
+          showSuggestions={
+            i === lastBotIndex && !isLoading && msg.streaming !== true
+          }
         />
       ))}
-      {isLoading && <TypingDots reduced={reduced} />}
+      {waitingForFirstToken && <TypingDots reduced={reduced} />}
       {error && (
         <div
+          role="alert"
           style={{
             alignSelf: "flex-start",
             padding: "10px 14px",
