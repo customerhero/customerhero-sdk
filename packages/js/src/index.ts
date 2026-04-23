@@ -7,6 +7,8 @@ export type {
   ChatMessage,
   ChatState,
   MessageRating,
+  MessageSource,
+  MessageBlock,
   IdentifyPayload,
   IdentityData,
 } from "./types";

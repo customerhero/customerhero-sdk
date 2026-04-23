@@ -1,11 +1,14 @@
 import { DEFAULTS } from "./defaults";
 import { createTranslate, type TranslateFn } from "./i18n";
+import { readSSEStream } from "./sse";
 import type {
   CustomerHeroChatConfig,
   ResolvedConfig,
   ChatMessage,
   ChatState,
   MessageRating,
+  MessageSource,
+  MessageBlock,
   IdentifyPayload,
   IdentityData,
 } from "./types";
@@ -95,6 +98,19 @@ export class CustomerHeroChat {
     this.notifyListeners();
   }
 
+  // Mutate the last message in place and notify. Used during streaming so
+  // listeners see tokens land without allocating a new messages array per
+  // token. The array itself is still replaced so consumers using
+  // structural equality (React's useSyncExternalStore) see a new reference.
+  private patchLastMessage(patch: Partial<ChatMessage>): void {
+    const { messages } = this.state;
+    if (messages.length === 0) return;
+    const next = messages.slice();
+    const last = next[next.length - 1];
+    next[next.length - 1] = { ...last, ...patch };
+    this.setState({ messages: next });
+  }
+
   private notifyListeners(): void {
     for (const listener of this.listeners) {
       listener(this.state);
@@ -145,14 +161,40 @@ export class CustomerHeroChat {
         this.setState({ conversationId: null });
         return;
       }
-      const data = await response.json();
-      const messages: ChatMessage[] = (data.messages ?? []).map(
-        (m: { id?: string; role: string; content: string }) => ({
-          id: m.id,
-          role: m.role as "user" | "bot",
-          content: m.content,
-        }),
+      const data = (await response.json()) as {
+        messages?: Array<{
+          id?: string;
+          role: string;
+          content: string;
+          sources?: MessageSource[];
+          blocks?: MessageBlock[];
+          suggestions?: string[];
+        }>;
+      };
+      const raw = data.messages ?? [];
+      const messages: ChatMessage[] = raw.map((m) => ({
+        id: m.id,
+        role: m.role as "user" | "bot",
+        content: m.content,
+        ...(m.sources ? { sources: m.sources } : {}),
+        ...(m.blocks ? { blocks: m.blocks } : {}),
+        ...(m.suggestions ? { suggestions: m.suggestions } : {}),
+      }));
+
+      // Only keep follow-up suggestions on the most recent bot message — older
+      // suggestions are stale once the conversation has moved on.
+      const lastBotIndex = findLastIndex(
+        messages,
+        (m) => m.role === "bot" && !!m.suggestions?.length,
       );
+      for (let i = 0; i < messages.length; i++) {
+        if (i !== lastBotIndex && messages[i].suggestions) {
+          const { suggestions: _s, ...rest } = messages[i];
+          void _s;
+          messages[i] = rest;
+        }
+      }
+
       if (messages.length > 0) {
         this.setState({ messages });
       }
@@ -166,19 +208,27 @@ export class CustomerHeroChat {
     if (!trimmed || this.state.isLoading) return;
 
     const userMsg: ChatMessage = { role: "user", content: trimmed };
+    // Drop any stale follow-up suggestions from the previous bot turn — the
+    // customer just sent a new message, the old chips no longer apply.
+    const cleanedHistory = this.state.messages.map((m) =>
+      m.suggestions ? stripSuggestions(m) : m,
+    );
     this.setState({
-      messages: [...this.state.messages, userMsg],
+      messages: [...cleanedHistory, userMsg],
       isLoading: true,
       error: null,
     });
 
-    const { chatbotId } = this.state.config;
-    const apiBase = this.state.config.apiBase;
+    const { chatbotId, apiBase } = this.state.config;
+    let botMessageCreated = false;
 
     try {
       const response = await fetch(`${apiBase}/api/chat/${chatbotId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
         body: JSON.stringify({
           message: trimmed,
           ...(this.state.conversationId
@@ -196,26 +246,107 @@ export class CustomerHeroChat {
         throw new Error(errorMsg);
       }
 
-      const data = await response.json();
-      const botMsg: ChatMessage = {
-        id: data.messageId,
-        role: "bot",
-        content: data.message,
-      };
-
-      const conversationId = data.conversationId ?? this.state.conversationId;
-      if (conversationId) {
-        this.storage?.setItem(`ch_conv_${chatbotId}`, conversationId);
+      if (!response.body) {
+        throw new Error("Empty response body");
       }
 
-      this.setState({
-        messages: [...this.state.messages, botMsg],
-        isLoading: false,
-        conversationId,
-      });
+      let fullContent = "";
+      let messageId: string | undefined;
+
+      for await (const evt of readSSEStream(response.body)) {
+        switch (evt.event) {
+          case "metadata": {
+            const meta = safeParse<{
+              conversationId?: string;
+              messageId?: string;
+            }>(evt.data);
+            if (meta?.conversationId) {
+              this.storage?.setItem(
+                `ch_conv_${chatbotId}`,
+                meta.conversationId,
+              );
+              this.setState({ conversationId: meta.conversationId });
+            }
+            if (meta?.messageId) {
+              messageId = meta.messageId;
+            }
+            break;
+          }
+          case "token": {
+            const tok = safeParse<{ text?: string }>(evt.data);
+            const text = tok?.text ?? "";
+            fullContent += text;
+            if (!botMessageCreated) {
+              const botMsg: ChatMessage = {
+                id: messageId,
+                role: "bot",
+                content: fullContent,
+                streaming: true,
+              };
+              this.setState({
+                messages: [...this.state.messages, botMsg],
+              });
+              botMessageCreated = true;
+            } else {
+              this.patchLastMessage({ content: fullContent });
+            }
+            break;
+          }
+          case "sources": {
+            const payload = safeParse<{ sources?: MessageSource[] }>(evt.data);
+            if (payload?.sources?.length && botMessageCreated) {
+              this.patchLastMessage({ sources: payload.sources });
+            }
+            break;
+          }
+          case "block": {
+            const payload = safeParse<{ block?: MessageBlock }>(evt.data);
+            if (payload?.block && botMessageCreated) {
+              const existing = this.state.messages.at(-1)?.blocks ?? [];
+              this.patchLastMessage({
+                blocks: [...existing, payload.block],
+              });
+            }
+            break;
+          }
+          case "suggestions": {
+            const payload = safeParse<{ suggestions?: string[] }>(evt.data);
+            if (payload?.suggestions?.length && botMessageCreated) {
+              this.patchLastMessage({ suggestions: payload.suggestions });
+            }
+            break;
+          }
+          case "done": {
+            if (botMessageCreated) {
+              this.patchLastMessage({
+                id: messageId,
+                streaming: false,
+              });
+            }
+            break;
+          }
+          case "error": {
+            const payload = safeParse<{ error?: string }>(evt.data);
+            throw new Error(payload?.error ?? "Stream failed");
+          }
+        }
+      }
+
+      // If we finished the stream without any tokens (e.g. manual response
+      // mode), surface a neutral empty state rather than a ghost bubble.
+      if (!botMessageCreated && !fullContent) {
+        // Nothing to render — the server is deferring to a human agent.
+      }
+
+      this.setState({ isLoading: false });
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Something went wrong";
+      // If a partial bot message was rendered, drop its streaming flag so it
+      // stops looking like it's still loading.
+      if (botMessageCreated) {
+        this.patchLastMessage({ streaming: false });
+      }
       this.setState({
         isLoading: false,
         error: errorMsg,
@@ -312,4 +443,25 @@ export class CustomerHeroChat {
       identity: this.identityData,
     });
   }
+}
+
+function safeParse<T>(data: string): T | null {
+  try {
+    return JSON.parse(data) as T;
+  } catch {
+    return null;
+  }
+}
+
+function stripSuggestions(message: ChatMessage): ChatMessage {
+  const { suggestions: _s, ...rest } = message;
+  void _s;
+  return rest;
+}
+
+function findLastIndex<T>(arr: T[], pred: (item: T) => boolean): number {
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (pred(arr[i])) return i;
+  }
+  return -1;
 }
