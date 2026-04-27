@@ -21,4 +21,6 @@ export const ptBR: Translations = {
   status_sending: "Enviando",
   status_sent: "Enviado",
   status_failed: "Falha no envio",
+  screenshot_capture: "Capturar tela",
+  attachment_remove: "Remover anexo",
 };

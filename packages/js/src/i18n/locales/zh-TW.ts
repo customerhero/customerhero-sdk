@@ -21,4 +21,6 @@ export const zhTW: Translations = {
   status_sending: "傳送中",
   status_sent: "已傳送",
   status_failed: "傳送失敗",
+  screenshot_capture: "擷取畫面",
+  attachment_remove: "移除附件",
 };

@@ -21,4 +21,6 @@ export const nl: Translations = {
   status_sending: "Verzenden",
   status_sent: "Verzonden",
   status_failed: "Verzenden mislukt",
+  screenshot_capture: "Schermafbeelding maken",
+  attachment_remove: "Bijlage verwijderen",
 };

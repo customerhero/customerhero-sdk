@@ -21,4 +21,6 @@ export const zhCN: Translations = {
   status_sending: "发送中",
   status_sent: "已发送",
   status_failed: "发送失败",
+  screenshot_capture: "截屏",
+  attachment_remove: "移除附件",
 };

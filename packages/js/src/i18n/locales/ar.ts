@@ -21,4 +21,6 @@ export const ar: Translations = {
   status_sending: "جارٍ الإرسال",
   status_sent: "تم الإرسال",
   status_failed: "فشل الإرسال",
+  screenshot_capture: "التقاط لقطة شاشة",
+  attachment_remove: "إزالة المرفق",
 };

@@ -21,4 +21,6 @@ export const ja: Translations = {
   status_sending: "送信中",
   status_sent: "送信済み",
   status_failed: "送信に失敗しました",
+  screenshot_capture: "スクリーンショットを撮る",
+  attachment_remove: "添付ファイルを削除",
 };

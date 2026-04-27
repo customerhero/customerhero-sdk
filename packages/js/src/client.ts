@@ -240,8 +240,13 @@ export class CustomerHeroChat {
     }
   }
 
-  async sendMessage(message: string): Promise<void> {
+  async sendMessage(
+    message: string,
+    options?: { attachmentTokens?: string[] },
+  ): Promise<void> {
     const trimmed = message.trim();
+    const attachmentTokens = options?.attachmentTokens ?? [];
+    // Attachments-only sends are not supported (the server requires text).
     if (!trimmed || this.state.isLoading) return;
 
     const userMsg: ChatMessage = {
@@ -286,6 +291,7 @@ export class CustomerHeroChat {
             ? { conversationId: this.state.conversationId }
             : {}),
           ...(this.identityData ? { identity: this.identityData } : {}),
+          ...(attachmentTokens.length > 0 ? { attachmentTokens } : {}),
         }),
       });
 
@@ -412,6 +418,42 @@ export class CustomerHeroChat {
         error: errorMsg,
       });
     }
+  }
+
+  // Upload a screenshot blob to the public attachments endpoint and return
+  // the token the caller should pass to `sendMessage(text, { attachmentTokens })`.
+  async uploadAttachment(
+    blob: Blob,
+    options?: { filename?: string },
+  ): Promise<{
+    attachmentToken: string;
+    previewUrl: string;
+    expiresAt: string;
+  }> {
+    const { chatbotId, apiBase } = this.state.config;
+    const filename =
+      options?.filename ?? `screenshot.${pickExtension(blob.type)}`;
+    const form = new FormData();
+    form.append("file", blob, filename);
+
+    const response = await fetch(
+      `${apiBase}/api/chat/${chatbotId}/attachments`,
+      { method: "POST", body: form },
+    );
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      const errorMsg =
+        (data as { error?: string } | null)?.error ??
+        `Upload failed: ${response.status}`;
+      throw new Error(errorMsg);
+    }
+    const json = (await response.json()) as {
+      attachmentToken: string;
+      previewUrl: string;
+      expiresAt: string;
+    };
+    return json;
   }
 
   approveAction(pendingId: string): Promise<void> {
@@ -691,4 +733,10 @@ function findLastIndex<T>(arr: T[], pred: (item: T) => boolean): number {
     if (pred(arr[i])) return i;
   }
   return -1;
+}
+
+function pickExtension(mime: string): string {
+  if (mime === "image/png") return "png";
+  if (mime === "image/webp") return "webp";
+  return "jpg";
 }

@@ -22,4 +22,6 @@ export const de: Translations = {
   status_sending: "Wird gesendet",
   status_sent: "Gesendet",
   status_failed: "Senden fehlgeschlagen",
+  screenshot_capture: "Bildschirmfoto erstellen",
+  attachment_remove: "Anhang entfernen",
 };

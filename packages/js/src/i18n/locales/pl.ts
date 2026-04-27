@@ -21,4 +21,6 @@ export const pl: Translations = {
   status_sending: "Wysyłanie",
   status_sent: "Wysłano",
   status_failed: "Nie udało się wysłać",
+  screenshot_capture: "Zrób zrzut ekranu",
+  attachment_remove: "Usuń załącznik",
 };

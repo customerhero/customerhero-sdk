@@ -21,4 +21,6 @@ export const it: Translations = {
   status_sending: "Invio in corso",
   status_sent: "Inviato",
   status_failed: "Invio non riuscito",
+  screenshot_capture: "Cattura schermata",
+  attachment_remove: "Rimuovi allegato",
 };

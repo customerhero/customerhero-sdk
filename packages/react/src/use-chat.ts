@@ -9,10 +9,21 @@ import { useCustomerHeroClient } from "./context";
 
 export interface UseChatReturn extends ChatState {
   t: TranslateFn;
-  sendMessage: (message: string) => Promise<void>;
+  sendMessage: (
+    message: string,
+    options?: { attachmentTokens?: string[] },
+  ) => Promise<void>;
   rateMessage: (messageId: string, rating: MessageRating) => Promise<void>;
   approveAction: (pendingId: string) => Promise<void>;
   cancelAction: (pendingId: string) => Promise<void>;
+  uploadAttachment: (
+    blob: Blob,
+    options?: { filename?: string },
+  ) => Promise<{
+    attachmentToken: string;
+    previewUrl: string;
+    expiresAt: string;
+  }>;
   setLocale: (tag: string) => void;
   toggle: () => void;
   open: () => void;
@@ -34,7 +45,13 @@ export function useChat(): UseChatReturn {
     ...state,
     t: client.t,
     sendMessage: useCallback(
-      (message: string) => client.sendMessage(message),
+      (message: string, options?: { attachmentTokens?: string[] }) =>
+        client.sendMessage(message, options),
+      [client],
+    ),
+    uploadAttachment: useCallback(
+      (blob: Blob, options?: { filename?: string }) =>
+        client.uploadAttachment(blob, options),
       [client],
     ),
     rateMessage: useCallback(

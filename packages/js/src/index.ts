@@ -14,6 +14,12 @@ export type {
   SupportedLocale,
   StringOverrides,
 } from "./i18n";
+export {
+  captureScreenshot,
+  canCaptureScreenshot,
+  ScreenshotCancelled,
+  ScreenshotUnavailable,
+} from "./screenshot";
 export type {
   CustomerHeroChatConfig,
   ResolvedConfig,

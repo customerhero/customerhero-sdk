@@ -22,6 +22,8 @@ export type TranslationKey =
   | "action_failed"
   | "status_sending"
   | "status_sent"
-  | "status_failed";
+  | "status_failed"
+  | "screenshot_capture"
+  | "attachment_remove";
 
 export type Translations = Record<TranslationKey, string>;

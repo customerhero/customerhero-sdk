@@ -21,4 +21,6 @@ export const tr: Translations = {
   status_sending: "Gönderiliyor",
   status_sent: "Gönderildi",
   status_failed: "Gönderilemedi",
+  screenshot_capture: "Ekran görüntüsü al",
+  attachment_remove: "Eki kaldır",
 };

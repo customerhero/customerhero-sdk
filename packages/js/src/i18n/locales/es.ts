@@ -20,4 +20,6 @@ export const es: Translations = {
   status_sending: "Enviando",
   status_sent: "Enviado",
   status_failed: "Error al enviar",
+  screenshot_capture: "Capturar pantalla",
+  attachment_remove: "Quitar adjunto",
 };

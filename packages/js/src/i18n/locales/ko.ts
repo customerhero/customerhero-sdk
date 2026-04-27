@@ -21,4 +21,6 @@ export const ko: Translations = {
   status_sending: "보내는 중",
   status_sent: "보냈음",
   status_failed: "보내기 실패",
+  screenshot_capture: "스크린샷 찍기",
+  attachment_remove: "첨부 파일 제거",
 };
