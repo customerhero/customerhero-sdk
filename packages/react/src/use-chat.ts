@@ -13,6 +13,7 @@ export interface UseChatReturn extends ChatState {
   rateMessage: (messageId: string, rating: MessageRating) => Promise<void>;
   approveAction: (pendingId: string) => Promise<void>;
   cancelAction: (pendingId: string) => Promise<void>;
+  setLocale: (tag: string) => void;
   toggle: () => void;
   open: () => void;
   close: () => void;
@@ -49,6 +50,7 @@ export function useChat(): UseChatReturn {
       (pendingId: string) => client.cancelAction(pendingId),
       [client],
     ),
+    setLocale: useCallback((tag: string) => client.setLocale(tag), [client]),
     toggle: useCallback(() => client.toggle(), [client]),
     open: useCallback(() => client.open(), [client]),
     close: useCallback(() => client.close(), [client]),

@@ -1,0 +1,20 @@
+import type { Translations } from "../keys";
+
+export const en: Translations = {
+  online: "Online",
+  typing: "Typing...",
+  unable_to_load: "Unable to load chat",
+  powered_by: "Powered by",
+  new_conversation: "New conversation",
+  open_chat: "Open chat",
+  close_chat: "Close chat",
+  send_message: "Send message",
+  helpful: "Helpful",
+  not_helpful: "Not helpful",
+  menu: "Menu",
+  action_approve: "Approve",
+  action_cancel: "Cancel",
+  action_what_will_happen: "What will happen?",
+  action_already_resolved: "This action has already been resolved.",
+  action_failed: "Couldn't complete that action. Please try again.",
+};

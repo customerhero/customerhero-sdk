@@ -1,5 +1,12 @@
 import { DEFAULTS } from "./defaults";
-import { createTranslate, type TranslateFn } from "./i18n";
+import {
+  createTranslator,
+  detectLocale,
+  isRtlLocale,
+  type StringOverrides,
+  type SupportedLocale,
+  type TranslateFn,
+} from "./i18n";
 import { readSSEStream } from "./sse";
 import type {
   CustomerHeroChatConfig,
@@ -42,6 +49,7 @@ function resolveConfig(
     avatarUrl: userConfig.avatarUrl ?? fetched?.avatarUrl,
     suggestedMessages:
       userConfig.suggestedMessages ?? fetched?.suggestedMessages ?? [],
+    stringOverrides: fetched?.stringOverrides,
   };
 }
 
@@ -59,14 +67,21 @@ export class CustomerHeroChat {
   private storage: Storage | null;
   private userConfig: CustomerHeroChatConfig;
   private identityData: IdentityData | null = null;
-  readonly t: TranslateFn;
+  // `t` is mutable: it gets rebuilt when locale changes or when the fetched
+  // widget config delivers `stringOverrides`. The React layer reads this
+  // property directly each render rather than caching it in a state snapshot,
+  // so a `setLocale` call propagates through `useSyncExternalStore` via the
+  // accompanying `setState({ locale, isRtl })` notification.
+  t: TranslateFn;
 
   constructor(config: CustomerHeroChatConfig) {
     this.userConfig = config;
     this.storage = getStorage();
-    this.t = createTranslate(config.locale);
 
+    const locale = detectLocale(config.locale);
     const resolved = resolveConfig(config);
+    this.t = createTranslator(locale, resolved.stringOverrides);
+
     const storedConvId = this.storage?.getItem(`ch_conv_${config.chatbotId}`);
 
     this.state = {
@@ -79,7 +94,26 @@ export class CustomerHeroChat {
       configError: null,
       error: null,
       identity: null,
+      locale,
+      isRtl: isRtlLocale(locale),
     };
+  }
+
+  // Switch the active locale at runtime. No-op when the resolved tag matches
+  // the current locale and `stringOverrides` is unchanged. Subscribers get a
+  // single state notification with the new `locale` / `isRtl`.
+  setLocale(tag: string): void {
+    const next = detectLocale(tag);
+    if (next === this.state.locale) return;
+    this.t = createTranslator(next, this.state.config.stringOverrides);
+    this.setState({ locale: next, isRtl: isRtlLocale(next) });
+  }
+
+  private rebuildTranslator(): void {
+    this.t = createTranslator(
+      this.state.locale,
+      this.state.config.stringOverrides,
+    );
   }
 
   subscribe(listener: Listener): () => void {
@@ -129,6 +163,9 @@ export class CustomerHeroChat {
       const fetched = await response.json();
       const resolved = resolveConfig(this.userConfig, fetched);
       this.setState({ config: resolved, configLoaded: true });
+      // Server-delivered string overrides require rebuilding the translator
+      // so subsequent `t()` calls pick them up.
+      if (resolved.stringOverrides) this.rebuildTranslator();
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to load widget config";

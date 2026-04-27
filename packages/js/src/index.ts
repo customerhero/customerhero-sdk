@@ -1,6 +1,19 @@
 export { CustomerHeroChat } from "./client";
 export { DEFAULTS } from "./defaults";
-export type { TranslationKey, TranslateFn } from "./i18n";
+export {
+  SUPPORTED_LOCALES,
+  isRtlLocale,
+  resolveLocale,
+  detectLocale,
+  createTranslator,
+} from "./i18n";
+export type {
+  TranslationKey,
+  TranslateFn,
+  Translations,
+  SupportedLocale,
+  StringOverrides,
+} from "./i18n";
 export type {
   CustomerHeroChatConfig,
   ResolvedConfig,

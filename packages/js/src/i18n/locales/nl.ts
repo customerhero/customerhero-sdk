@@ -1,0 +1,21 @@
+// MT-quality seed (nl). Pending native-speaker review.
+import type { Translations } from "../keys";
+
+export const nl: Translations = {
+  online: "Online",
+  typing: "Typt...",
+  unable_to_load: "Chat kon niet worden geladen",
+  powered_by: "Mogelijk gemaakt door",
+  new_conversation: "Nieuw gesprek",
+  open_chat: "Chat openen",
+  close_chat: "Chat sluiten",
+  send_message: "Bericht verzenden",
+  helpful: "Nuttig",
+  not_helpful: "Niet nuttig",
+  menu: "Menu",
+  action_approve: "Goedkeuren",
+  action_cancel: "Annuleren",
+  action_what_will_happen: "Wat gaat er gebeuren?",
+  action_already_resolved: "Deze actie is al afgehandeld.",
+  action_failed: "Actie kon niet worden voltooid. Probeer het opnieuw.",
+};

@@ -43,7 +43,7 @@ function ConfigError({ message, title }: { message: string; title: string }) {
 }
 
 export function ChatWindow() {
-  const { isOpen, config, configError, t } = useChat();
+  const { isOpen, config, configError, t, isRtl } = useChat();
   const reduced = useReducedMotion();
   // Track render visibility separately to allow exit animation
   const [visible, setVisible] = useState(false);
@@ -70,10 +70,18 @@ export function ChatWindow() {
 
   if (!shouldRender) return null;
 
+  // Mirror the launcher: an RTL locale flips the window to the opposite
+  // corner so it stays visually attached to its (also-flipped) launcher.
+  const effectivePosition = isRtl
+    ? config.position === "bottom-right"
+      ? "bottom-left"
+      : "bottom-right"
+    : config.position;
+
   const style: CSSProperties = {
     position: "fixed",
     bottom: 90,
-    [config.position === "bottom-left" ? "left" : "right"]: 20,
+    [effectivePosition === "bottom-left" ? "left" : "right"]: 20,
     width: 380,
     maxWidth: "calc(100vw - 40px)",
     height: 520,
@@ -108,7 +116,7 @@ export function ChatWindow() {
   };
 
   return (
-    <div style={style}>
+    <div style={style} dir={isRtl ? "rtl" : "ltr"}>
       <ChatHeader />
       {configError ? (
         <ConfigError title={t("unable_to_load")} message={configError} />

@@ -3,7 +3,7 @@ import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 
 export function ChatBubble() {
-  const { toggle, config, t } = useChat();
+  const { toggle, config, t, isRtl } = useChat();
   const reduced = useReducedMotion();
   const [mounted, setMounted] = useState(false);
 
@@ -14,10 +14,18 @@ export function ChatBubble() {
 
   const visible = mounted;
 
+  // Flip the launcher corner for RTL locales — users of those languages
+  // expect interactive chrome to mirror text direction.
+  const effectivePosition = isRtl
+    ? config.position === "bottom-right"
+      ? "bottom-left"
+      : "bottom-right"
+    : config.position;
+
   const style: CSSProperties = {
     position: "fixed",
     bottom: 20,
-    [config.position === "bottom-left" ? "left" : "right"]: 20,
+    [effectivePosition === "bottom-left" ? "left" : "right"]: 20,
     width: 56,
     height: 56,
     borderRadius: "50%",
@@ -41,6 +49,7 @@ export function ChatBubble() {
     <button
       onClick={toggle}
       style={style}
+      dir={isRtl ? "rtl" : "ltr"}
       aria-label={t("open_chat")}
       onMouseEnter={(e) => {
         if (!reduced) e.currentTarget.style.transform = "scale(1.1)";

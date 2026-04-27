@@ -1,0 +1,21 @@
+// MT-quality seed (pt-PT). Pending native-speaker review.
+import type { Translations } from "../keys";
+
+export const ptPT: Translations = {
+  online: "Online",
+  typing: "A escrever...",
+  unable_to_load: "Não foi possível carregar o chat",
+  powered_by: "Desenvolvido por",
+  new_conversation: "Nova conversa",
+  open_chat: "Abrir chat",
+  close_chat: "Fechar chat",
+  send_message: "Enviar mensagem",
+  helpful: "Útil",
+  not_helpful: "Não útil",
+  menu: "Menu",
+  action_approve: "Aprovar",
+  action_cancel: "Cancelar",
+  action_what_will_happen: "O que irá acontecer?",
+  action_already_resolved: "Esta ação já foi resolvida.",
+  action_failed: "Não foi possível concluir a ação. Tente novamente.",
+};

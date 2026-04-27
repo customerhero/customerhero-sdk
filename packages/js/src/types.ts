@@ -25,6 +25,8 @@ export interface CustomerHeroChatConfig {
   suggestedMessages?: string[];
 }
 
+import type { StringOverrides, SupportedLocale } from "./i18n";
+
 export interface ResolvedConfig {
   chatbotId: string;
   apiBase: string;
@@ -37,6 +39,8 @@ export interface ResolvedConfig {
   title: string;
   avatarUrl?: string;
   suggestedMessages: string[];
+  /** Per-chatbot overrides for any translation key, optionally per-locale. */
+  stringOverrides?: StringOverrides;
 }
 
 // Source citation emitted inline in bot replies as `[1]`, `[2]` markers and
@@ -130,4 +134,8 @@ export interface ChatState {
   configError: string | null;
   error: string | null;
   identity: IdentityData | null;
+  /** Active locale (one of `SUPPORTED_LOCALES`). */
+  locale: SupportedLocale;
+  /** True when the active locale is right-to-left. */
+  isRtl: boolean;
 }
