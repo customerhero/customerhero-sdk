@@ -196,10 +196,17 @@ function AnimatedMessage({
   const [visible, setVisible] = useState(!animate);
 
   useEffect(() => {
-    if (animate && !reduced) {
-      const id = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(id);
+    // If animation is disabled (reduced motion) or this message no longer
+    // counts as "new", make it visible immediately. Without this, a streamed
+    // bot bubble flips animate=true → false on the first token (the parent's
+    // newStartIndex advances), the scheduled RAF gets cancelled, and the
+    // bubble stays at opacity: 0 forever.
+    if (!animate || reduced) {
+      setVisible(true);
+      return;
     }
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
   }, [animate, reduced]);
 
   const style: CSSProperties = {
