@@ -9,7 +9,12 @@ export type TranslationKey =
   | "send_message"
   | "helpful"
   | "not_helpful"
-  | "menu";
+  | "menu"
+  | "action_approve"
+  | "action_cancel"
+  | "action_what_will_happen"
+  | "action_already_resolved"
+  | "action_failed";
 
 type Translations = Record<TranslationKey, string>;
 
@@ -25,6 +30,11 @@ const en: Translations = {
   helpful: "Helpful",
   not_helpful: "Not helpful",
   menu: "Menu",
+  action_approve: "Approve",
+  action_cancel: "Cancel",
+  action_what_will_happen: "What will happen?",
+  action_already_resolved: "This action has already been resolved.",
+  action_failed: "Couldn't complete that action. Please try again.",
 };
 
 const es: Translations = {
@@ -39,6 +49,11 @@ const es: Translations = {
   helpful: "Útil",
   not_helpful: "No útil",
   menu: "Menú",
+  action_approve: "Aprobar",
+  action_cancel: "Cancelar",
+  action_what_will_happen: "¿Qué pasará?",
+  action_already_resolved: "Esta acción ya se ha resuelto.",
+  action_failed: "No se pudo completar la acción. Inténtalo de nuevo.",
 };
 
 const locales: Record<string, Translations> = { en, es };

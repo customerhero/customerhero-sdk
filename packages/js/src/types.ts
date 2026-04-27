@@ -53,10 +53,25 @@ export interface MessageSource {
 // Structured part of a bot reply beyond the plain-text `content`. Rendered
 // alongside the bubble. The union is open-ended — unknown types should be
 // ignored by older clients.
-export type MessageBlock = {
+export type QuickRepliesBlock = {
   type: "quick_replies";
   options: string[];
 };
+
+// Inline approve/cancel card the widget renders when the bot proposes a
+// confirm-required action mid-turn. Server-generated; the widget routes
+// the decision through `approveAction` / `cancelAction` on the client.
+export type ActionConfirmationBlock = {
+  type: "action_confirmation";
+  pendingToolCallId: string;
+  actionName: string;
+  title: string;
+  summary: string;
+  approveHref: string;
+  cancelHref: string;
+};
+
+export type MessageBlock = QuickRepliesBlock | ActionConfirmationBlock;
 
 export interface ChatMessage {
   /** Message ID from the API (only present for bot messages) */

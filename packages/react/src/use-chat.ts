@@ -11,6 +11,8 @@ export interface UseChatReturn extends ChatState {
   t: TranslateFn;
   sendMessage: (message: string) => Promise<void>;
   rateMessage: (messageId: string, rating: MessageRating) => Promise<void>;
+  approveAction: (pendingId: string) => Promise<void>;
+  cancelAction: (pendingId: string) => Promise<void>;
   toggle: () => void;
   open: () => void;
   close: () => void;
@@ -37,6 +39,14 @@ export function useChat(): UseChatReturn {
     rateMessage: useCallback(
       (messageId: string, rating: MessageRating) =>
         client.rateMessage(messageId, rating),
+      [client],
+    ),
+    approveAction: useCallback(
+      (pendingId: string) => client.approveAction(pendingId),
+      [client],
+    ),
+    cancelAction: useCallback(
+      (pendingId: string) => client.cancelAction(pendingId),
       [client],
     ),
     toggle: useCallback(() => client.toggle(), [client]),

@@ -8,6 +8,7 @@ import type {
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 import { renderMarkdown } from "../markdown/render";
+import { ActionConfirmationCard } from "./action-confirmation-card";
 
 function MessageRatingButtons({
   messageId,
@@ -182,13 +183,19 @@ function ChipRow({
 function BlockRenderer({
   block,
   onSend,
+  onApproveAction,
+  onCancelAction,
   primaryColor,
   reduced,
+  t,
 }: {
   block: MessageBlock;
   onSend: (value: string) => void;
+  onApproveAction: (pendingId: string) => Promise<void>;
+  onCancelAction: (pendingId: string) => Promise<void>;
   primaryColor: string;
   reduced: boolean;
+  t: TranslateFn;
 }) {
   switch (block.type) {
     case "quick_replies":
@@ -198,6 +205,16 @@ function BlockRenderer({
           onSelect={onSend}
           primaryColor={primaryColor}
           reduced={reduced}
+        />
+      );
+    case "action_confirmation":
+      return (
+        <ActionConfirmationCard
+          block={block}
+          primaryColor={primaryColor}
+          t={t}
+          onApprove={onApproveAction}
+          onCancel={onCancelAction}
         />
       );
   }
@@ -234,6 +251,8 @@ function Message({
   config,
   onRate,
   onSend,
+  onApproveAction,
+  onCancelAction,
   hasConversation,
   t,
   animate,
@@ -244,6 +263,8 @@ function Message({
   config: { primaryColor: string; textColor: string };
   onRate: (messageId: string, rating: MessageRating) => Promise<void>;
   onSend: (value: string) => void;
+  onApproveAction: (pendingId: string) => Promise<void>;
+  onCancelAction: (pendingId: string) => Promise<void>;
   hasConversation: boolean;
   t: TranslateFn;
   animate: boolean;
@@ -294,8 +315,11 @@ function Message({
             key={i}
             block={block}
             onSend={onSend}
+            onApproveAction={onApproveAction}
+            onCancelAction={onCancelAction}
             primaryColor={config.primaryColor}
             reduced={reduced}
+            t={t}
           />
         ))}
       {!isUser && showSuggestions && message.suggestions?.length ? (
@@ -306,15 +330,19 @@ function Message({
           reduced={reduced}
         />
       ) : null}
-      {message.role === "bot" && message.id && hasConversation && (
-        <MessageRatingButtons
-          messageId={message.id}
-          onRate={onRate}
-          primaryColor={config.primaryColor}
-          t={t}
-          reduced={reduced}
-        />
-      )}
+      {message.role === "bot" &&
+        message.id &&
+        hasConversation &&
+        !message.streaming &&
+        !message.blocks?.some((b) => b.type === "action_confirmation") && (
+          <MessageRatingButtons
+            messageId={message.id}
+            onRate={onRate}
+            primaryColor={config.primaryColor}
+            t={t}
+            reduced={reduced}
+          />
+        )}
     </AnimatedMessage>
   );
 }
@@ -367,6 +395,8 @@ export function ChatMessages() {
     conversationId,
     rateMessage,
     sendMessage,
+    approveAction,
+    cancelAction,
     t,
   } = useChat();
   const reduced = useReducedMotion();
@@ -425,6 +455,8 @@ export function ChatMessages() {
           config={config}
           onRate={rateMessage}
           onSend={sendMessage}
+          onApproveAction={approveAction}
+          onCancelAction={cancelAction}
           hasConversation={conversationId !== null}
           t={t}
           animate={i >= newStartIndex}

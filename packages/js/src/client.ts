@@ -210,9 +210,18 @@ export class CustomerHeroChat {
     const userMsg: ChatMessage = { role: "user", content: trimmed };
     // Drop any stale follow-up suggestions from the previous bot turn — the
     // customer just sent a new message, the old chips no longer apply.
-    const cleanedHistory = this.state.messages.map((m) =>
-      m.suggestions ? stripSuggestions(m) : m,
-    );
+    // Also supersede any open action_confirmation card optimistically: the
+    // server will authoritatively supersede the pending row, but stripping
+    // the block locally now keeps the UI from flashing a stale card while
+    // the request is in flight.
+    const cleanedHistory = this.state.messages.map((m) => {
+      let next = m;
+      if (next.suggestions) next = stripSuggestions(next);
+      if (next.blocks?.some((b) => b.type === "action_confirmation")) {
+        next = stripActionConfirmationBlocks(next);
+      }
+      return next;
+    });
     this.setState({
       messages: [...cleanedHistory, userMsg],
       isLoading: true,
@@ -354,6 +363,159 @@ export class CustomerHeroChat {
     }
   }
 
+  approveAction(pendingId: string): Promise<void> {
+    return this.sendDecision(pendingId, "approve");
+  }
+
+  cancelAction(pendingId: string): Promise<void> {
+    return this.sendDecision(pendingId, "cancel");
+  }
+
+  // Locate the bot bubble that carries the action_confirmation block for
+  // `pendingId`, strip the block, mark the bubble streaming, then POST the
+  // decision and stream tokens back into the same bubble.
+  private async sendDecision(
+    pendingId: string,
+    decision: "approve" | "cancel",
+  ): Promise<void> {
+    const targetIndex = this.findActionConfirmationMessageIndex(pendingId);
+    if (targetIndex === -1) {
+      // The card is gone — likely already resolved on another tab. Surface a
+      // localized error and re-fetch history to converge on the server state.
+      this.setState({ error: this.t("action_already_resolved") });
+      await this.loadHistory();
+      return;
+    }
+
+    // Optimistically strip the card and start streaming on that bubble.
+    const messages = this.state.messages.slice();
+    const original = messages[targetIndex];
+    messages[targetIndex] = {
+      ...stripActionConfirmationBlocks(original),
+      streaming: true,
+    };
+    this.setState({ messages, error: null });
+
+    const { chatbotId, apiBase } = this.state.config;
+    const url = `${apiBase}/api/chat/${chatbotId}/tool-calls/${pendingId}/decision`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          decision,
+          ...(this.identityData ? { identity: this.identityData } : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        const errorMsg =
+          (data as { error?: string } | null)?.error ??
+          `Request failed: ${response.status}`;
+        throw new Error(errorMsg);
+      }
+      if (!response.body) throw new Error("Empty response body");
+
+      for await (const evt of readSSEStream(response.body)) {
+        switch (evt.event) {
+          case "metadata": {
+            const meta = safeParse<{ conversationId?: string }>(evt.data);
+            if (meta?.conversationId) {
+              this.storage?.setItem(
+                `ch_conv_${chatbotId}`,
+                meta.conversationId,
+              );
+              this.setState({ conversationId: meta.conversationId });
+            }
+            break;
+          }
+          case "token": {
+            const tok = safeParse<{ text?: string }>(evt.data);
+            const text = tok?.text ?? "";
+            if (text) {
+              this.appendToMessageAt(targetIndex, text);
+            }
+            break;
+          }
+          case "block": {
+            const payload = safeParse<{ block?: MessageBlock }>(evt.data);
+            if (payload?.block) {
+              this.appendBlockToMessageAt(targetIndex, payload.block);
+            }
+            break;
+          }
+          case "done": {
+            this.patchMessageAt(targetIndex, { streaming: false });
+            break;
+          }
+          case "error": {
+            const payload = safeParse<{ error?: string; kind?: string }>(
+              evt.data,
+            );
+            if (payload?.kind === "already_resolved") {
+              this.patchMessageAt(targetIndex, { streaming: false });
+              this.setState({ error: this.t("action_already_resolved") });
+              await this.loadHistory();
+              return;
+            }
+            throw new Error(payload?.error ?? "Stream failed");
+          }
+        }
+      }
+    } catch (error) {
+      const errorMsg =
+        error instanceof Error ? error.message : this.t("action_failed");
+      this.patchMessageAt(targetIndex, { streaming: false });
+      this.setState({ error: errorMsg });
+    }
+  }
+
+  private findActionConfirmationMessageIndex(pendingId: string): number {
+    const { messages } = this.state;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const blocks = messages[i].blocks;
+      if (
+        blocks?.some(
+          (b) =>
+            b.type === "action_confirmation" &&
+            b.pendingToolCallId === pendingId,
+        )
+      ) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private patchMessageAt(index: number, patch: Partial<ChatMessage>): void {
+    const messages = this.state.messages.slice();
+    if (!messages[index]) return;
+    messages[index] = { ...messages[index], ...patch };
+    this.setState({ messages });
+  }
+
+  private appendToMessageAt(index: number, text: string): void {
+    const messages = this.state.messages.slice();
+    const target = messages[index];
+    if (!target) return;
+    messages[index] = { ...target, content: target.content + text };
+    this.setState({ messages });
+  }
+
+  private appendBlockToMessageAt(index: number, block: MessageBlock): void {
+    const messages = this.state.messages.slice();
+    const target = messages[index];
+    if (!target) return;
+    const existing = target.blocks ?? [];
+    messages[index] = { ...target, blocks: [...existing, block] };
+    this.setState({ messages });
+  }
+
   async rateMessage(messageId: string, rating: MessageRating): Promise<void> {
     const { chatbotId, apiBase } = this.state.config;
     const { conversationId } = this.state;
@@ -457,6 +619,20 @@ function stripSuggestions(message: ChatMessage): ChatMessage {
   const { suggestions: _s, ...rest } = message;
   void _s;
   return rest;
+}
+
+function stripActionConfirmationBlocks(message: ChatMessage): ChatMessage {
+  if (!message.blocks?.length) return message;
+  const blocks = message.blocks.filter(
+    (b) => b.type !== "action_confirmation",
+  );
+  if (blocks.length === message.blocks.length) return message;
+  if (blocks.length === 0) {
+    const { blocks: _b, ...rest } = message;
+    void _b;
+    return rest;
+  }
+  return { ...message, blocks };
 }
 
 function findLastIndex<T>(arr: T[], pred: (item: T) => boolean): number {

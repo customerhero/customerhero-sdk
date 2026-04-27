@@ -9,6 +9,8 @@ export type {
   MessageRating,
   MessageSource,
   MessageBlock,
+  QuickRepliesBlock,
+  ActionConfirmationBlock,
   IdentifyPayload,
   IdentityData,
 } from "./types";
