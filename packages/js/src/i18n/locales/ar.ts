@@ -18,4 +18,7 @@ export const ar: Translations = {
   action_what_will_happen: "ماذا سيحدث؟",
   action_already_resolved: "تم حل هذا الإجراء بالفعل.",
   action_failed: "تعذر إكمال الإجراء. يرجى المحاولة مرة أخرى.",
+  status_sending: "جارٍ الإرسال",
+  status_sent: "تم الإرسال",
+  status_failed: "فشل الإرسال",
 };

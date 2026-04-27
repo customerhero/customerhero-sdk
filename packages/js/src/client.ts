@@ -244,7 +244,11 @@ export class CustomerHeroChat {
     const trimmed = message.trim();
     if (!trimmed || this.state.isLoading) return;
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: trimmed,
+      status: "sending",
+    };
     // Drop any stale follow-up suggestions from the previous bot turn — the
     // customer just sent a new message, the old chips no longer apply.
     // Also supersede any open action_confirmation card optimistically: the
@@ -259,6 +263,7 @@ export class CustomerHeroChat {
       }
       return next;
     });
+    const userMsgIndex = cleanedHistory.length;
     this.setState({
       messages: [...cleanedHistory, userMsg],
       isLoading: true,
@@ -313,6 +318,8 @@ export class CustomerHeroChat {
               );
               this.setState({ conversationId: meta.conversationId });
             }
+            // Server has accepted the message — flip the user bubble to sent.
+            this.patchMessageAt(userMsgIndex, { status: "sent" });
             if (meta?.messageId) {
               messageId = meta.messageId;
             }
@@ -392,6 +399,13 @@ export class CustomerHeroChat {
       // stops looking like it's still loading.
       if (botMessageCreated) {
         this.patchLastMessage({ streaming: false });
+      }
+      // The user bubble stays visible so the customer can retry. If we
+      // already saw `metadata` (status: sent), don't downgrade to failed —
+      // the server *did* accept the message, the failure was mid-stream.
+      const userStatus = this.state.messages[userMsgIndex]?.status;
+      if (userStatus !== "sent") {
+        this.patchMessageAt(userMsgIndex, { status: "failed" });
       }
       this.setState({
         isLoading: false,

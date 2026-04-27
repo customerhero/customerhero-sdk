@@ -19,6 +19,9 @@ export type TranslationKey =
   | "action_cancel"
   | "action_what_will_happen"
   | "action_already_resolved"
-  | "action_failed";
+  | "action_failed"
+  | "status_sending"
+  | "status_sent"
+  | "status_failed";
 
 export type Translations = Record<TranslationKey, string>;

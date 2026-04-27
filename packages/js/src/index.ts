@@ -22,6 +22,7 @@ export type {
   MessageRating,
   MessageSource,
   MessageBlock,
+  MessageStatus,
   QuickRepliesBlock,
   ActionConfirmationBlock,
   IdentifyPayload,

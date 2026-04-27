@@ -18,4 +18,7 @@ export const ptBR: Translations = {
   action_what_will_happen: "O que vai acontecer?",
   action_already_resolved: "Esta ação já foi resolvida.",
   action_failed: "Não foi possível concluir a ação. Tente novamente.",
+  status_sending: "Enviando",
+  status_sent: "Enviado",
+  status_failed: "Falha no envio",
 };

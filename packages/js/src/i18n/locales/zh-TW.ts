@@ -18,4 +18,7 @@ export const zhTW: Translations = {
   action_what_will_happen: "會發生什麼？",
   action_already_resolved: "此操作已處理。",
   action_failed: "操作未能完成，請重試。",
+  status_sending: "傳送中",
+  status_sent: "已傳送",
+  status_failed: "傳送失敗",
 };

@@ -18,4 +18,7 @@ export const nl: Translations = {
   action_what_will_happen: "Wat gaat er gebeuren?",
   action_already_resolved: "Deze actie is al afgehandeld.",
   action_failed: "Actie kon niet worden voltooid. Probeer het opnieuw.",
+  status_sending: "Verzenden",
+  status_sent: "Verzonden",
+  status_failed: "Verzenden mislukt",
 };

@@ -19,4 +19,7 @@ export const de: Translations = {
   action_already_resolved: "Diese Aktion wurde bereits abgeschlossen.",
   action_failed:
     "Aktion konnte nicht abgeschlossen werden. Bitte erneut versuchen.",
+  status_sending: "Wird gesendet",
+  status_sent: "Gesendet",
+  status_failed: "Senden fehlgeschlagen",
 };

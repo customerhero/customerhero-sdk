@@ -18,4 +18,7 @@ export const ko: Translations = {
   action_what_will_happen: "무슨 일이 일어나나요?",
   action_already_resolved: "이 작업은 이미 처리되었습니다.",
   action_failed: "작업을 완료할 수 없습니다. 다시 시도해 주세요.",
+  status_sending: "보내는 중",
+  status_sent: "보냈음",
+  status_failed: "보내기 실패",
 };

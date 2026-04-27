@@ -18,4 +18,7 @@ export const ptPT: Translations = {
   action_what_will_happen: "O que irá acontecer?",
   action_already_resolved: "Esta ação já foi resolvida.",
   action_failed: "Não foi possível concluir a ação. Tente novamente.",
+  status_sending: "A enviar",
+  status_sent: "Enviada",
+  status_failed: "Falha no envio",
 };

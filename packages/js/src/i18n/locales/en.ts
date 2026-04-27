@@ -17,4 +17,7 @@ export const en: Translations = {
   action_what_will_happen: "What will happen?",
   action_already_resolved: "This action has already been resolved.",
   action_failed: "Couldn't complete that action. Please try again.",
+  status_sending: "Sending",
+  status_sent: "Sent",
+  status_failed: "Failed to send",
 };

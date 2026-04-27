@@ -18,4 +18,7 @@ export const ja: Translations = {
   action_what_will_happen: "何が起こりますか？",
   action_already_resolved: "このアクションは既に処理されています。",
   action_failed: "アクションを完了できませんでした。もう一度お試しください。",
+  status_sending: "送信中",
+  status_sent: "送信済み",
+  status_failed: "送信に失敗しました",
 };

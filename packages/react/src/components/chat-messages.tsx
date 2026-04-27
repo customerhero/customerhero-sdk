@@ -10,6 +10,96 @@ import { useReducedMotion } from "../use-reduced-motion";
 import { renderMarkdown } from "../markdown/render";
 import { ActionConfirmationCard } from "./action-confirmation-card";
 
+function MessageStatusPill({
+  status,
+  t,
+}: {
+  status: NonNullable<ChatMessage["status"]>;
+  t: TranslateFn;
+}) {
+  const failed = status === "failed";
+  const containerStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+    fontSize: 11,
+    color: failed ? "#b91c1c" : "#888",
+    alignSelf: "flex-end",
+  };
+  const labelKey =
+    status === "sending"
+      ? "status_sending"
+      : status === "sent"
+        ? "status_sent"
+        : "status_failed";
+  return (
+    <div style={containerStyle} aria-live="polite">
+      {status === "sending" && <ClockIcon />}
+      {status === "sent" && <CheckIcon />}
+      {status === "failed" && <ExclamationIcon />}
+      <span>{t(labelKey)}</span>
+    </div>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function ExclamationIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
 function MessageRatingButtons({
   messageId,
   onRate,
@@ -309,6 +399,9 @@ function Message({
           </>
         )}
       </div>
+      {isUser && message.status && (
+        <MessageStatusPill status={message.status} t={t} />
+      )}
       {!isUser &&
         message.blocks?.map((block, i) => (
           <BlockRenderer

@@ -17,4 +17,7 @@ export const es: Translations = {
   action_what_will_happen: "¿Qué pasará?",
   action_already_resolved: "Esta acción ya se ha resuelto.",
   action_failed: "No se pudo completar la acción. Inténtalo de nuevo.",
+  status_sending: "Enviando",
+  status_sent: "Enviado",
+  status_failed: "Error al enviar",
 };

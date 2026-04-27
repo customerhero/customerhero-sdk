@@ -18,4 +18,7 @@ export const zhCN: Translations = {
   action_what_will_happen: "会发生什么？",
   action_already_resolved: "此操作已处理。",
   action_failed: "操作未能完成，请重试。",
+  status_sending: "发送中",
+  status_sent: "已发送",
+  status_failed: "发送失败",
 };

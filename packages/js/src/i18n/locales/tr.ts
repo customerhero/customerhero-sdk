@@ -18,4 +18,7 @@ export const tr: Translations = {
   action_what_will_happen: "Ne olacak?",
   action_already_resolved: "Bu işlem zaten çözüldü.",
   action_failed: "İşlem tamamlanamadı. Lütfen tekrar deneyin.",
+  status_sending: "Gönderiliyor",
+  status_sent: "Gönderildi",
+  status_failed: "Gönderilemedi",
 };

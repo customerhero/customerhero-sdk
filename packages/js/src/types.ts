@@ -77,6 +77,11 @@ export type ActionConfirmationBlock = {
 
 export type MessageBlock = QuickRepliesBlock | ActionConfirmationBlock;
 
+// Local-only delivery status for user messages. Intentionally narrow so it
+// can extend to `delivered` / `read` once the server schema lands without
+// churning the public type contract.
+export type MessageStatus = "sending" | "sent" | "failed";
+
 export interface ChatMessage {
   /** Message ID from the API (only present for bot messages) */
   id?: string;
@@ -93,6 +98,12 @@ export interface ChatMessage {
   suggestions?: string[];
   /** True while this message is still receiving streaming tokens. */
   streaming?: boolean;
+  /**
+   * Local-only delivery status. User messages only — `sending` until the
+   * SSE `metadata` event lands, then `sent`. `failed` if the POST never
+   * reached the server. Bot messages use `streaming` instead.
+   */
+  status?: MessageStatus;
 }
 
 export type MessageRating = "positive" | "negative";

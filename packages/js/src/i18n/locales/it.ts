@@ -18,4 +18,7 @@ export const it: Translations = {
   action_what_will_happen: "Cosa accadrà?",
   action_already_resolved: "Questa azione è già stata risolta.",
   action_failed: "Impossibile completare l'azione. Riprova.",
+  status_sending: "Invio in corso",
+  status_sent: "Inviato",
+  status_failed: "Invio non riuscito",
 };
