@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 import { ActionConfirmationCard } from "../src";
 import type { ActionConfirmationBlock, TranslateFn } from "@customerhero/js";
 

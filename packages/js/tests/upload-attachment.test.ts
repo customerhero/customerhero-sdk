@@ -100,9 +100,8 @@ describe("uploadAttachment + sendMessage attachmentTokens passthrough", () => {
     await chat.sendMessage("look at this", {
       attachmentTokens: ["tok_1", "tok_2"],
     });
-    expect((captured as { attachmentTokens?: string[] }).attachmentTokens).toEqual([
-      "tok_1",
-      "tok_2",
-    ]);
+    expect(
+      (captured as { attachmentTokens?: string[] }).attachmentTokens,
+    ).toEqual(["tok_1", "tok_2"]);
   });
 });

@@ -49,7 +49,10 @@ export async function captureScreenshot(): Promise<Blob> {
       audio: false,
     });
   } catch (e) {
-    if (e instanceof Error && (e.name === "NotAllowedError" || e.name === "AbortError")) {
+    if (
+      e instanceof Error &&
+      (e.name === "NotAllowedError" || e.name === "AbortError")
+    ) {
       throw new ScreenshotCancelled(e.message);
     }
     const msg = e instanceof Error ? e.message : "Screen capture failed";
@@ -173,7 +176,8 @@ async function canvasToBlob(
   }
   return await new Promise<Blob>((resolve, reject) => {
     (canvas as HTMLCanvasElement).toBlob(
-      (b) => (b ? resolve(b) : reject(new ScreenshotUnavailable("Encode failed"))),
+      (b) =>
+        b ? resolve(b) : reject(new ScreenshotUnavailable("Encode failed")),
       "image/jpeg",
       quality,
     );

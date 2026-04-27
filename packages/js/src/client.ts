@@ -716,9 +716,7 @@ function stripSuggestions(message: ChatMessage): ChatMessage {
 
 function stripActionConfirmationBlocks(message: ChatMessage): ChatMessage {
   if (!message.blocks?.length) return message;
-  const blocks = message.blocks.filter(
-    (b) => b.type !== "action_confirmation",
-  );
+  const blocks = message.blocks.filter((b) => b.type !== "action_confirmation");
   if (blocks.length === message.blocks.length) return message;
   if (blocks.length === 0) {
     const { blocks: _b, ...rest } = message;

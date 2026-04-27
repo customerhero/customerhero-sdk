@@ -92,9 +92,8 @@ describe("action confirmation in CustomerHeroChat", () => {
 
     // Now send a follow-up. Replace fetch with one that captures pre-flight
     // state (when the request is in flight, the local card should be gone).
-    let stateAtRequestTime:
-      | ReturnType<CustomerHeroChat["getState"]>
-      | null = null;
+    let stateAtRequestTime: ReturnType<CustomerHeroChat["getState"]> | null =
+      null;
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {

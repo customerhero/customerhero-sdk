@@ -48,7 +48,9 @@ export function ChatInput() {
 
   const updateAttachment = (id: string, patch: Partial<Attachment>) => {
     setAttachments((current) =>
-      current.map((a) => (a.id === id ? ({ ...a, ...patch } as Attachment) : a)),
+      current.map((a) =>
+        a.id === id ? ({ ...a, ...patch } as Attachment) : a,
+      ),
     );
   };
 
@@ -90,12 +92,18 @@ export function ChatInput() {
   };
 
   const readyTokens = attachments
-    .filter((a): a is Extract<Attachment, { status: "ready" }> => a.status === "ready")
+    .filter(
+      (a): a is Extract<Attachment, { status: "ready" }> =>
+        a.status === "ready",
+    )
     .map((a) => a.token);
 
   const handleSend = () => {
     if (!value.trim() || isLoading) return;
-    sendMessage(value, readyTokens.length > 0 ? { attachmentTokens: readyTokens } : undefined);
+    sendMessage(
+      value,
+      readyTokens.length > 0 ? { attachmentTokens: readyTokens } : undefined,
+    );
     // Clean up — next message starts with no carried attachments.
     for (const a of attachments) URL.revokeObjectURL(a.previewUrl);
     setAttachments([]);
@@ -257,8 +265,7 @@ function Thumbnail({
     height: 56,
     borderRadius: 8,
     overflow: "hidden",
-    border:
-      status === "error" ? "2px solid #b91c1c" : "1px solid #e0e0e0",
+    border: status === "error" ? "2px solid #b91c1c" : "1px solid #e0e0e0",
     background: "#f5f5f5",
   };
   const img: CSSProperties = {

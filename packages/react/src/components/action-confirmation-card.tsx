@@ -1,8 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import type {
-  ActionConfirmationBlock,
-  TranslateFn,
-} from "@customerhero/js";
+import type { ActionConfirmationBlock, TranslateFn } from "@customerhero/js";
 
 export interface ActionConfirmationCardProps {
   block: ActionConfirmationBlock;
@@ -95,17 +92,13 @@ export function ActionConfirmationCard({
     fontWeight: 500,
     cursor: chosen ? "default" : "pointer",
     border:
-      variant === "primary"
-        ? `1px solid ${primaryColor}`
-        : "1px solid #ddd",
-    background:
-      variant === "primary"
-        ? primaryColor
-        : "#fff",
+      variant === "primary" ? `1px solid ${primaryColor}` : "1px solid #ddd",
+    background: variant === "primary" ? primaryColor : "#fff",
     color: variant === "primary" ? "#fff" : "#333",
-    opacity: chosen && chosen !== (variant === "primary" ? "approve" : "cancel")
-      ? 0.5
-      : 1,
+    opacity:
+      chosen && chosen !== (variant === "primary" ? "approve" : "cancel")
+        ? 0.5
+        : 1,
     transition: "opacity 0.15s",
     display: "flex",
     alignItems: "center",
