@@ -4,6 +4,8 @@ import type {
   MessageRating,
   TranslateFn,
   IdentifyPayload,
+  ConsentSettings,
+  PreChatSubmission,
 } from "@customerhero/js";
 import { useCustomerHeroClient } from "./context";
 
@@ -30,6 +32,12 @@ export interface UseChatReturn extends ChatState {
   close: () => void;
   reset: () => void;
   identify: (payload: IdentifyPayload) => void;
+  setConsent: (consent: Partial<ConsentSettings>) => void;
+  setTraits: (traits: Record<string, string | number | boolean>) => void;
+  submitPreChatForm: (submission: PreChatSubmission) => Promise<void>;
+  cancelPreChatForm: () => void;
+  fireTrigger: (triggerId: string) => void;
+  consumePendingPrefill: () => string | null;
 }
 
 export function useChat(): UseChatReturn {
@@ -74,6 +82,28 @@ export function useChat(): UseChatReturn {
     reset: useCallback(() => client.reset(), [client]),
     identify: useCallback(
       (payload: IdentifyPayload) => client.identify(payload),
+      [client],
+    ),
+    setConsent: useCallback(
+      (consent: Partial<ConsentSettings>) => client.setConsent(consent),
+      [client],
+    ),
+    setTraits: useCallback(
+      (traits: Record<string, string | number | boolean>) =>
+        client.setTraits(traits),
+      [client],
+    ),
+    submitPreChatForm: useCallback(
+      (submission: PreChatSubmission) => client.submitPreChatForm(submission),
+      [client],
+    ),
+    cancelPreChatForm: useCallback(() => client.cancelPreChatForm(), [client]),
+    fireTrigger: useCallback(
+      (triggerId: string) => client.fireTrigger(triggerId),
+      [client],
+    ),
+    consumePendingPrefill: useCallback(
+      () => client.consumePendingPrefill(),
       [client],
     ),
   };

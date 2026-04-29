@@ -26,7 +26,15 @@ type Attachment =
   | { id: string; status: "error"; previewUrl: string; blob: Blob };
 
 export function ChatInput() {
-  const { sendMessage, uploadAttachment, isLoading, config, t } = useChat();
+  const {
+    sendMessage,
+    uploadAttachment,
+    isLoading,
+    config,
+    t,
+    consumePendingPrefill,
+    pendingPrefill,
+  } = useChat();
   const reduced = useReducedMotion();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -37,6 +45,14 @@ export function ChatInput() {
   useEffect(() => {
     setCaptureSupported(canCaptureScreenshot());
   }, []);
+
+  // Drain any prefill set by an `open_with_prefill` trigger. Runs once per
+  // pendingPrefill change so a new trigger after the first one still wins.
+  useEffect(() => {
+    if (pendingPrefill === null) return;
+    const text = consumePendingPrefill();
+    if (text !== null) setValue(text);
+  }, [pendingPrefill, consumePendingPrefill]);
 
   // Revoke blob URLs on unmount to avoid leaks.
   useEffect(() => {

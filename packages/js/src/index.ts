@@ -33,4 +33,19 @@ export type {
   ActionConfirmationBlock,
   IdentifyPayload,
   IdentityData,
+  TriggerDefinition,
+  TriggerConditionNode,
+  TriggerConditionLeaf,
+  TriggerAction,
+  TriggerFrequency,
+  PreChatField,
+  PreChatFieldKind,
+  PreChatFormConfig,
+  PreChatSubmission,
+  ConsentSettings,
 } from "./types";
+export { evaluate, pickFire, type VisitorContext } from "./triggers";
+export {
+  startTriggersRuntime,
+  type TriggersRuntimeHandle,
+} from "./triggers-runtime";

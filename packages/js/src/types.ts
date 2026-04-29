@@ -135,6 +135,125 @@ export interface IdentityData {
   customProperties?: Record<string, string | number | boolean>;
 }
 
+// ─── Proactive engagement ─────────────────────────────────────────────────
+// These types mirror the public widget-config payload returned by
+// `GET /api/widget/:chatbotId/config`. The condition tree is opaque to the
+// SDK consumer — `triggers.evaluate()` walks it.
+
+export type TriggerConditionNode =
+  | { all: TriggerConditionNode[] }
+  | { any: TriggerConditionNode[] }
+  | TriggerConditionLeaf;
+
+export type TriggerConditionLeaf =
+  | {
+      kind: "url_path";
+      op: "equals" | "contains" | "regex" | "starts_with";
+      value: string;
+    }
+  | {
+      kind: "url_query";
+      key: string;
+      op: "equals" | "contains" | "exists";
+      value?: string;
+    }
+  | { kind: "referrer"; op: "contains" | "equals" | "regex"; value: string }
+  | { kind: "time_on_page"; seconds: number }
+  | { kind: "scroll_depth"; percent: number }
+  | { kind: "exit_intent" }
+  | { kind: "device"; op: "equals"; value: "mobile" | "tablet" | "desktop" }
+  | { kind: "browser_language"; op: "in"; values: string[] }
+  | {
+      kind: "visitor_trait";
+      key: string;
+      op: "equals" | "exists" | "gt" | "lt";
+      value?: string | number | boolean;
+    }
+  | { kind: "return_visit"; op: "gte" | "eq"; count: number };
+
+export type TriggerAction =
+  | { kind: "open_widget" }
+  | { kind: "send_message"; message: string }
+  | { kind: "show_form" }
+  | { kind: "open_with_prefill"; prefill: string };
+
+export type TriggerFrequency = "once_ever" | "once_per_session" | "every_time";
+
+export interface TriggerDefinition {
+  id: string;
+  priority: number;
+  conditions: TriggerConditionNode;
+  action: TriggerAction;
+  frequency: TriggerFrequency;
+}
+
+export type PreChatFieldKind =
+  | "name"
+  | "email"
+  | "phone"
+  | "text"
+  | "textarea"
+  | "select"
+  | "consent";
+
+export type PreChatField =
+  | { kind: "name"; required?: boolean; label?: string }
+  | { kind: "email"; required?: boolean; label?: string; validateMx?: boolean }
+  | { kind: "phone"; required?: boolean; label?: string }
+  | {
+      kind: "text";
+      key: string;
+      label: string;
+      required?: boolean;
+      maxLength?: number;
+    }
+  | {
+      kind: "textarea";
+      key: string;
+      label: string;
+      required?: boolean;
+      maxLength?: number;
+    }
+  | {
+      kind: "select";
+      key: string;
+      label: string;
+      options: Array<{ value: string; label: string }>;
+      required?: boolean;
+    }
+  | {
+      kind: "consent";
+      key: string;
+      label: string;
+      url?: string;
+      required: true;
+    };
+
+export interface PreChatFormConfig {
+  fields: PreChatField[];
+  title?: string | null;
+  description?: string | null;
+  submitLabel: string;
+  /** When true, an identified visitor (CustomerHero.identify already called)
+   *  bypasses the form. */
+  skipForIdentified: boolean;
+}
+
+export interface PreChatSubmission {
+  name?: string;
+  email?: string;
+  phone?: string;
+  /** Keyed answers from text/textarea/select/consent fields. */
+  properties?: Record<string, string | number | boolean>;
+}
+
+export interface ConsentSettings {
+  /** When true, all condition kinds are evaluated. When false (default), only
+   *  direct launcher clicks fire — URL/time/scroll/exit-intent/trait
+   *  conditions stay dormant. */
+  analytics: boolean;
+}
+
 export interface ChatState {
   messages: ChatMessage[];
   isOpen: boolean;
@@ -149,4 +268,24 @@ export interface ChatState {
   locale: SupportedLocale;
   /** True when the active locale is right-to-left. */
   isRtl: boolean;
+  /** Triggers loaded from the server config (active + in-window). */
+  triggers: TriggerDefinition[];
+  /** Pre-chat form configuration, if any. */
+  preChatForm: PreChatFormConfig | null;
+  /**
+   * True when the pre-chat form must be shown before the next chat turn.
+   * Flipped by trigger actions, by the first sendMessage when a form is
+   * configured and not yet submitted, and cleared on submit.
+   */
+  preChatFormVisible: boolean;
+  /** Captured pre-chat submission, sent on the first chat call. */
+  preChatSubmission: PreChatSubmission | null;
+  /** Per-visitor consent. Until set explicitly, only direct launcher clicks
+   *  trigger; behavioral conditions stay dormant. */
+  consent: ConsentSettings;
+  /** ID of the trigger attributed to the next conversation start, if any. */
+  pendingTriggerId: string | null;
+  /** When set, the host should preload this text into the input. Cleared
+   *  once the host consumes it (or when the conversation starts). */
+  pendingPrefill: string | null;
 }

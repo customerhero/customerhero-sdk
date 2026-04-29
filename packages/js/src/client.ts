@@ -8,6 +8,10 @@ import {
   type TranslateFn,
 } from "./i18n";
 import { readSSEStream } from "./sse";
+import {
+  startTriggersRuntime,
+  type TriggersRuntimeHandle,
+} from "./triggers-runtime";
 import type {
   CustomerHeroChatConfig,
   ResolvedConfig,
@@ -18,6 +22,11 @@ import type {
   MessageBlock,
   IdentifyPayload,
   IdentityData,
+  TriggerDefinition,
+  TriggerAction,
+  PreChatFormConfig,
+  PreChatSubmission,
+  ConsentSettings,
 } from "./types";
 
 type Listener = (state: ChatState) => void;
@@ -96,7 +105,37 @@ export class CustomerHeroChat {
       identity: null,
       locale,
       isRtl: isRtlLocale(locale),
+      triggers: [],
+      preChatForm: null,
+      preChatFormVisible: false,
+      preChatSubmission: null,
+      consent: this.readStoredConsent(),
+      pendingTriggerId: null,
+      pendingPrefill: null,
     };
+  }
+
+  // ── Proactive engagement state ─────────────────────────────────────
+  private triggersRuntime: TriggersRuntimeHandle | null = null;
+  private preChatFormSubmitted = false;
+
+  private readStoredConsent(): ConsentSettings {
+    try {
+      const raw = this.storage?.getItem("ch_consent");
+      if (!raw) return { analytics: false };
+      const parsed = JSON.parse(raw) as { analytics?: unknown };
+      return { analytics: parsed.analytics === true };
+    } catch {
+      return { analytics: false };
+    }
+  }
+
+  private writeStoredConsent(consent: ConsentSettings): void {
+    try {
+      this.storage?.setItem("ch_consent", JSON.stringify(consent));
+    } catch {
+      // best-effort
+    }
   }
 
   // Switch the active locale at runtime. No-op when the resolved tag matches
@@ -160,12 +199,23 @@ export class CustomerHeroChat {
       if (!response.ok) {
         throw new Error(`Failed to fetch config: ${response.status}`);
       }
-      const fetched = await response.json();
+      const fetched = (await response.json()) as Partial<ResolvedConfig> & {
+        triggers?: TriggerDefinition[];
+        preChatForm?: PreChatFormConfig;
+      };
       const resolved = resolveConfig(this.userConfig, fetched);
-      this.setState({ config: resolved, configLoaded: true });
+      const triggers = Array.isArray(fetched.triggers) ? fetched.triggers : [];
+      const preChatForm = fetched.preChatForm ?? null;
+      this.setState({
+        config: resolved,
+        configLoaded: true,
+        triggers,
+        preChatForm,
+      });
       // Server-delivered string overrides require rebuilding the translator
       // so subsequent `t()` calls pick them up.
       if (resolved.stringOverrides) this.rebuildTranslator();
+      this.startTriggersRuntimeIfPossible();
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to load widget config";
@@ -249,6 +299,20 @@ export class CustomerHeroChat {
     // Attachments-only sends are not supported (the server requires text).
     if (!trimmed || this.state.isLoading) return;
 
+    // Pre-chat form gate: when a form is configured and not yet submitted,
+    // suspend the send and surface the form. The host (React shell or
+    // integrator) must call `submitPreChatForm()` to resume — the message
+    // text is preserved in `pendingMessage` so we can re-send after the
+    // submission completes.
+    if (this.shouldShowPreChatForm()) {
+      this.pendingMessageAfterPreChat = {
+        message: trimmed,
+        attachmentTokens,
+      };
+      this.setState({ preChatFormVisible: true });
+      return;
+    }
+
     const userMsg: ChatMessage = {
       role: "user",
       content: trimmed,
@@ -292,6 +356,16 @@ export class CustomerHeroChat {
             : {}),
           ...(this.identityData ? { identity: this.identityData } : {}),
           ...(attachmentTokens.length > 0 ? { attachmentTokens } : {}),
+          // Trigger attribution + pre-chat submission only land on the very
+          // first turn. We only consume them when there's no conversationId
+          // yet — the server ignores them on subsequent turns anyway, but
+          // sending them again would be misleading.
+          ...(!this.state.conversationId && this.state.pendingTriggerId
+            ? { triggeredByTriggerId: this.state.pendingTriggerId }
+            : {}),
+          ...(!this.state.conversationId && this.state.preChatSubmission
+            ? { prechatSubmission: this.state.preChatSubmission }
+            : {}),
         }),
       });
 
@@ -322,7 +396,16 @@ export class CustomerHeroChat {
                 `ch_conv_${chatbotId}`,
                 meta.conversationId,
               );
-              this.setState({ conversationId: meta.conversationId });
+              // Conversation has been created — `triggeredByTriggerId` and
+              // `prechatSubmission` are now committed server-side, so we can
+              // clear them from local state to avoid a redundant re-send if
+              // the user reloads the SDK and types again before the
+              // conversation is loaded from history.
+              this.setState({
+                conversationId: meta.conversationId,
+                pendingTriggerId: null,
+                preChatSubmission: null,
+              });
             }
             // Server has accepted the message — flip the user bubble to sent.
             this.patchMessageAt(userMsgIndex, { status: "sent" });
@@ -661,6 +744,146 @@ export class CustomerHeroChat {
       isLoading: false,
       error: null,
     });
+  }
+
+  // ── Proactive engagement public API ────────────────────────────────
+
+  /** Update visitor consent. Until `analytics: true` is set, only direct
+   *  launcher clicks fire — URL/time/scroll/exit-intent/trait conditions
+   *  stay dormant. The setting is persisted in localStorage so revisits
+   *  don't re-prompt. */
+  setConsent(consent: Partial<ConsentSettings>): void {
+    const next: ConsentSettings = {
+      analytics:
+        typeof consent.analytics === "boolean"
+          ? consent.analytics
+          : this.state.consent.analytics,
+    };
+    this.writeStoredConsent(next);
+    this.setState({ consent: next });
+    // If consent just turned on, the runtime can re-evaluate and fire any
+    // currently-matching trigger.
+    this.triggersRuntime?.reevaluate();
+  }
+
+  /** Set or update visitor traits used by trait-based conditions. The trait
+   *  values are kept in memory (not persisted) so the integrator decides
+   *  the source of truth. */
+  setTraits(traits: Record<string, string | number | boolean>): void {
+    this.triggersRuntime?.setTraits(traits);
+  }
+
+  /** Submit pre-chat form answers. Synthesizes a customer record server-side
+   *  on the next sendMessage. Resumes any pending message that was deferred
+   *  while the form was open. */
+  async submitPreChatForm(submission: PreChatSubmission): Promise<void> {
+    this.preChatFormSubmitted = true;
+    this.setState({
+      preChatSubmission: submission,
+      preChatFormVisible: false,
+    });
+    const pending = this.pendingMessageAfterPreChat;
+    this.pendingMessageAfterPreChat = null;
+    if (pending) {
+      await this.sendMessage(pending.message, {
+        attachmentTokens: pending.attachmentTokens,
+      });
+    }
+  }
+
+  /** Dismiss the pre-chat form without submitting. The form will reappear
+   *  on the next sendMessage attempt — call `setConsent` to acknowledge a
+   *  refusal, or `reset()` to clear pending state. */
+  cancelPreChatForm(): void {
+    this.pendingMessageAfterPreChat = null;
+    this.setState({ preChatFormVisible: false });
+  }
+
+  /** Programmatically dispatch the action attached to a trigger. Used by
+   *  integrators who want to act on a custom button, e.g. an exit-intent
+   *  modal in their own UI. */
+  fireTrigger(triggerId: string): void {
+    const trigger = this.state.triggers.find((t) => t.id === triggerId);
+    if (!trigger) return;
+    this.triggersRuntime?.markFired(trigger.id, trigger.frequency);
+    this.handleTriggerAction(trigger);
+  }
+
+  // ── Internals ──────────────────────────────────────────────────────
+
+  private pendingMessageAfterPreChat: {
+    message: string;
+    attachmentTokens: string[];
+  } | null = null;
+
+  private shouldShowPreChatForm(): boolean {
+    const form = this.state.preChatForm;
+    if (!form) return false;
+    if (this.preChatFormSubmitted) return false;
+    if (this.state.conversationId) return false;
+    if (form.skipForIdentified && this.identityData?.userId) return false;
+    return true;
+  }
+
+  private startTriggersRuntimeIfPossible(): void {
+    if (this.triggersRuntime) return;
+    if (this.state.triggers.length === 0) return;
+    this.triggersRuntime = startTriggersRuntime({
+      chatbotId: this.state.config.chatbotId,
+      triggers: this.state.triggers,
+      isAllowedToFire: () => this.state.consent.analytics,
+      onFire: (trigger) => this.handleTriggerAction(trigger),
+    });
+  }
+
+  private handleTriggerAction(trigger: TriggerDefinition): void {
+    // Record attribution for the next conversation start. Subsequent fires
+    // overwrite this — the most recent trigger to fire is the one that gets
+    // credit if multiple fire before the customer types.
+    this.setState({ pendingTriggerId: trigger.id });
+    const action = trigger.action as TriggerAction;
+    switch (action.kind) {
+      case "open_widget":
+        this.open();
+        break;
+      case "open_with_prefill":
+        this.open();
+        this.setState({ pendingPrefill: action.prefill });
+        break;
+      case "show_form":
+        this.open();
+        if (this.state.preChatForm) {
+          this.setState({ preChatFormVisible: true });
+        }
+        break;
+      case "send_message":
+        this.open();
+        // Inject a bot bubble that introduces the conversation. The first
+        // visitor reply will create the real conversation server-side and
+        // attribute it via the pending trigger.
+        if (this.state.messages.length === 0) {
+          this.setState({
+            messages: [{ role: "bot", content: action.message }],
+          });
+        }
+        break;
+    }
+  }
+
+  /** Read and clear the pending prefill (set by an `open_with_prefill`
+   *  trigger). The host calls this once when mounting the input and seeds
+   *  its controlled value with the result. */
+  consumePendingPrefill(): string | null {
+    const prefill = this.state.pendingPrefill;
+    if (prefill !== null) this.setState({ pendingPrefill: null });
+    return prefill;
+  }
+
+  /** Stop the triggers runtime and detach listeners. Safe to call multiple
+   *  times; safe to call before the runtime started. */
+  destroy(): void {
+    this.triggersRuntime?.stop();
+    this.triggersRuntime = null;
   }
 
   identify(payload: IdentifyPayload): void {
