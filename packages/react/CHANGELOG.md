@@ -1,5 +1,16 @@
 # @customerhero/react
 
+## 2.0.0
+
+### Major Changes
+
+- Re-release at 2.0.0 to fix a broken peer dependency in `@customerhero/react@1.1.0` (its `@customerhero/js` peer was locked to `^2.0.0` but the matching js package was published at 1.1.0). Both packages are now realigned at 2.0.0; no behavioral or API change beyond what landed in 1.1.0.
+
+### Patch Changes
+
+- Updated dependencies
+  - @customerhero/js@2.0.0
+
 ## 1.1.0
 
 ### Minor Changes
