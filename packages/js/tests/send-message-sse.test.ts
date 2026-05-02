@@ -65,7 +65,7 @@ describe("sendMessage over SSE", () => {
     expect(msgs[1].streaming).toBeFalsy();
   });
 
-  it("user bubble is `sending` until metadata arrives, then `sent`", async () => {
+  it("user bubble is `sending` while fetch is pending, then `sent` once the response is accepted", async () => {
     const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
 
     // Build a stream we can advance by hand to inspect mid-stream state.
@@ -79,27 +79,38 @@ describe("sendMessage over SSE", () => {
       },
     });
 
+    // Hold fetch open so we can observe the `sending` state. The bubble
+    // flips to `sent` as soon as the response promise resolves with a 2xx —
+    // we no longer wait for the SSE `metadata` event because `prepareChat`
+    // on the server can take seconds before the first event is emitted.
+    let resolveFetch: ((r: Response) => void) | null = null;
+    const fetchPromise = new Promise<Response>((res) => {
+      resolveFetch = res;
+    });
     vi.stubGlobal(
       "fetch",
-      vi.fn(
-        async () =>
-          new Response(body, {
-            status: 200,
-            headers: { "Content-Type": "text/event-stream" },
-          }),
-      ),
+      vi.fn(() => fetchPromise),
     );
 
     const sendPromise = chat.sendMessage("hi");
-    // Yield to the microtask queue so sendMessage starts pulling from the stream.
     await new Promise((r) => setTimeout(r, 0));
 
+    // fetch is still pending → user bubble is `sending`.
     expect(chat.getState().messages[0].status).toBe("sending");
 
-    advance!(`event: metadata\ndata: {"conversationId":"c1"}\n\n`);
+    resolveFetch!(
+      new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    );
     await new Promise((r) => setTimeout(r, 0));
+
+    // Response accepted by the server → bubble is `sent`, even before any
+    // SSE event has arrived.
     expect(chat.getState().messages[0].status).toBe("sent");
 
+    advance!(`event: metadata\ndata: {"conversationId":"c1"}\n\n`);
     advance!(`event: done\ndata: {}\n\n`);
     close!();
     await sendPromise;
