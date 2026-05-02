@@ -24,7 +24,7 @@ export const tr: Translations = {
   screenshot_capture: "Ekran görüntüsü al",
   attachment_remove: "Eki kaldır",
   attach_menu_open: "Ek ekle",
-  attach_photo: "Fotoğraf seç",
+  attach_photo: "Dosya seç",
   drop_files_here: "Dosyaları buraya bırak",
   attachment_unsupported_type: "Desteklenmeyen dosya türü",
 };

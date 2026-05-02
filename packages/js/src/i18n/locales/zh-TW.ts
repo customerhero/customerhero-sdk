@@ -24,7 +24,7 @@ export const zhTW: Translations = {
   screenshot_capture: "擷取畫面",
   attachment_remove: "移除附件",
   attach_menu_open: "新增附件",
-  attach_photo: "選擇照片",
+  attach_photo: "選擇檔案",
   drop_files_here: "將檔案拖放到此處",
   attachment_unsupported_type: "不支援的檔案類型",
 };

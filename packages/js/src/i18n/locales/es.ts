@@ -23,7 +23,7 @@ export const es: Translations = {
   screenshot_capture: "Capturar pantalla",
   attachment_remove: "Quitar adjunto",
   attach_menu_open: "Añadir adjunto",
-  attach_photo: "Elegir foto",
+  attach_photo: "Elegir archivo",
   drop_files_here: "Suelta los archivos aquí",
   attachment_unsupported_type: "Tipo de archivo no admitido",
 };

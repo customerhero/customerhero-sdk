@@ -24,7 +24,7 @@ export const ptPT: Translations = {
   screenshot_capture: "Capturar ecrã",
   attachment_remove: "Remover anexo",
   attach_menu_open: "Adicionar anexo",
-  attach_photo: "Escolher foto",
+  attach_photo: "Escolher ficheiro",
   drop_files_here: "Largue os ficheiros aqui",
   attachment_unsupported_type: "Tipo de ficheiro não suportado",
 };

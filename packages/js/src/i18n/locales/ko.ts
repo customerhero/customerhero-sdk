@@ -24,7 +24,7 @@ export const ko: Translations = {
   screenshot_capture: "스크린샷 찍기",
   attachment_remove: "첨부 파일 제거",
   attach_menu_open: "첨부 파일 추가",
-  attach_photo: "사진 선택",
+  attach_photo: "파일 선택",
   drop_files_here: "파일을 여기에 놓기",
   attachment_unsupported_type: "지원되지 않는 파일 형식",
 };

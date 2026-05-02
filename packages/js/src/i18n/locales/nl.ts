@@ -24,7 +24,7 @@ export const nl: Translations = {
   screenshot_capture: "Schermafbeelding maken",
   attachment_remove: "Bijlage verwijderen",
   attach_menu_open: "Bijlage toevoegen",
-  attach_photo: "Foto kiezen",
+  attach_photo: "Bestand kiezen",
   drop_files_here: "Sleep bestanden hier",
   attachment_unsupported_type: "Bestandstype niet ondersteund",
 };

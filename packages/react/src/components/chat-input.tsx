@@ -20,19 +20,40 @@ const MAX_ATTACHMENTS = 3;
 // Mirrors the server allowlist in apps/api/src/routes/chatbots.ts. Anything
 // outside this set is rejected client-side with a transient error pill so
 // the user gets immediate feedback instead of a 415 round-trip.
-const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+const ALLOWED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/pdf",
+] as const;
 const ACCEPT_ATTR = ALLOWED_MIME_TYPES.join(",");
+function isImageMime(mime: string): boolean {
+  return mime.startsWith("image/");
+}
 
 type Attachment =
-  | { id: string; status: "uploading"; previewUrl: string; blob: Blob }
+  | {
+      id: string;
+      status: "uploading";
+      previewUrl: string;
+      blob: Blob;
+      filename?: string;
+    }
   | {
       id: string;
       status: "ready";
       previewUrl: string;
       blob: Blob;
       token: string;
+      filename?: string;
     }
-  | { id: string; status: "error"; previewUrl: string; blob: Blob };
+  | {
+      id: string;
+      status: "error";
+      previewUrl: string;
+      blob: Blob;
+      filename?: string;
+    };
 
 export function ChatInput() {
   const {
@@ -119,16 +140,16 @@ export function ChatInput() {
     );
   };
 
-  const startUpload = async (blob: Blob) => {
+  const startUpload = async (blob: Blob, filename?: string) => {
     if (attachments.length >= MAX_ATTACHMENTS) return;
     const id = `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const previewUrl = URL.createObjectURL(blob);
     setAttachments((current) => [
       ...current,
-      { id, status: "uploading", previewUrl, blob },
+      { id, status: "uploading", previewUrl, blob, filename },
     ]);
     try {
-      const { attachmentToken } = await uploadAttachment(blob);
+      const { attachmentToken } = await uploadAttachment(blob, { filename });
       updateAttachment(id, {
         status: "ready",
         token: attachmentToken,
@@ -155,7 +176,11 @@ export function ChatInput() {
         rejectedAny = true;
         continue;
       }
-      void startUpload(f as Blob);
+      const filename =
+        typeof (f as File).name === "string" && (f as File).name.length > 0
+          ? (f as File).name
+          : undefined;
+      void startUpload(f as Blob, filename);
       queued += 1;
     }
     if (rejectedAny) {
@@ -543,15 +568,21 @@ function Thumbnail({
   onRemove: () => void;
   t: (k: "attachment_remove" | "status_failed") => string;
 }) {
-  const { status, previewUrl } = attachment;
+  const { status, previewUrl, blob, filename } = attachment;
+  const isImage = isImageMime(blob.type);
   const wrap: CSSProperties = {
     position: "relative",
-    width: 56,
+    width: isImage ? 56 : 160,
     height: 56,
     borderRadius: 8,
     overflow: "hidden",
     border: status === "error" ? "2px solid #b91c1c" : "1px solid #e0e0e0",
     background: "#f5f5f5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: isImage ? "stretch" : "flex-start",
+    gap: isImage ? 0 : 8,
+    padding: isImage ? 0 : "0 8px",
   };
   const img: CSSProperties = {
     width: "100%",
@@ -582,10 +613,49 @@ function Thumbnail({
     alignItems: "center",
     justifyContent: "center",
   };
+  const docName: CSSProperties = {
+    fontSize: 12,
+    fontWeight: 500,
+    color: "#333",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: 110,
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  };
+  const docMeta: CSSProperties = {
+    fontSize: 11,
+    color: "#888",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  };
+
+  const displayName = filename ?? (isImage ? "" : "Document");
+  const sizeLabel = formatBytes(blob.size);
 
   return (
     <div style={wrap}>
-      <img src={previewUrl} alt="" style={img} />
+      {isImage ? (
+        <img src={previewUrl} alt="" style={img} />
+      ) : (
+        <>
+          <DocIcon />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            <span style={docName} title={displayName}>
+              {displayName}
+            </span>
+            {sizeLabel && <span style={docMeta}>{sizeLabel}</span>}
+          </div>
+        </>
+      )}
       {status === "uploading" && (
         <div style={overlay} aria-label="Uploading">
           <Spinner />
@@ -650,6 +720,36 @@ function ImageIcon() {
       <polyline points="21 15 16 10 5 21" />
     </svg>
   );
+}
+
+function DocIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ color: "#666", flexShrink: 0 }}
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function CameraIcon() {

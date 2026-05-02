@@ -24,7 +24,7 @@ export const ar: Translations = {
   screenshot_capture: "التقاط لقطة شاشة",
   attachment_remove: "إزالة المرفق",
   attach_menu_open: "إضافة مرفق",
-  attach_photo: "اختر صورة",
+  attach_photo: "اختر ملفًا",
   drop_files_here: "أفلت الملفات هنا",
   attachment_unsupported_type: "نوع الملف غير مدعوم",
 };

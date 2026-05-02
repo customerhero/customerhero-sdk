@@ -25,7 +25,7 @@ export const de: Translations = {
   screenshot_capture: "Bildschirmfoto erstellen",
   attachment_remove: "Anhang entfernen",
   attach_menu_open: "Anhang hinzufügen",
-  attach_photo: "Foto auswählen",
+  attach_photo: "Datei auswählen",
   drop_files_here: "Dateien hier ablegen",
   attachment_unsupported_type: "Dateityp nicht unterstützt",
 };

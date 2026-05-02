@@ -24,7 +24,7 @@ export const fr: Translations = {
   screenshot_capture: "Capture d'écran",
   attachment_remove: "Supprimer la pièce jointe",
   attach_menu_open: "Ajouter une pièce jointe",
-  attach_photo: "Choisir une photo",
+  attach_photo: "Choisir un fichier",
   drop_files_here: "Déposez les fichiers ici",
   attachment_unsupported_type: "Type de fichier non pris en charge",
 };
