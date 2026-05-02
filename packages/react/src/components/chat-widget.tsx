@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { CustomerHeroChatConfig, IdentifyPayload } from "@customerhero/js";
 import { CustomerHeroProvider, useCustomerHeroClient } from "../context";
+import { useChat } from "../use-chat";
 import { ChatBubble } from "./chat-bubble";
 import { ChatWindow } from "./chat-window";
 
@@ -11,6 +12,7 @@ export interface ChatWidgetProps extends CustomerHeroChatConfig {
 
 function ChatWidgetInner({ identity }: { identity?: IdentifyPayload }) {
   const client = useCustomerHeroClient();
+  const { configLoaded, configError } = useChat();
   const prevIdentityRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -22,6 +24,11 @@ function ChatWidgetInner({ identity }: { identity?: IdentifyPayload }) {
       }
     }
   }, [identity, client]);
+
+  // Hold the launcher until the server config arrives — otherwise it would
+  // flash with default branding and reposition once real colors/position
+  // load. A failed fetch (e.g. unknown chatbot id) keeps the widget hidden.
+  if (!configLoaded || configError) return null;
 
   return (
     <>
