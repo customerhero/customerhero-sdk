@@ -381,6 +381,13 @@ export class CustomerHeroChat {
         throw new Error("Empty response body");
       }
 
+      // Server has accepted the request — flip the user bubble to sent now.
+      // We don't wait for the SSE `metadata` event because `prepareChat` on
+      // the server (retrieval, history load, etc.) can take seconds before
+      // it yields, which would otherwise leave the bubble on "Sending" for
+      // the entire pre-LLM phase.
+      this.patchMessageAt(userMsgIndex, { status: "sent" });
+
       let fullContent = "";
       let messageId: string | undefined;
 
@@ -407,8 +414,6 @@ export class CustomerHeroChat {
                 preChatSubmission: null,
               });
             }
-            // Server has accepted the message — flip the user bubble to sent.
-            this.patchMessageAt(userMsgIndex, { status: "sent" });
             if (meta?.messageId) {
               messageId = meta.messageId;
             }
