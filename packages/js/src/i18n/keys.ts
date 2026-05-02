@@ -24,6 +24,10 @@ export type TranslationKey =
   | "status_sent"
   | "status_failed"
   | "screenshot_capture"
-  | "attachment_remove";
+  | "attachment_remove"
+  | "attach_menu_open"
+  | "attach_photo"
+  | "drop_files_here"
+  | "attachment_unsupported_type";
 
 export type Translations = Record<TranslationKey, string>;

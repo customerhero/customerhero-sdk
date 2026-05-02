@@ -1,7 +1,10 @@
 import {
   useEffect,
+  useRef,
   useState,
+  type ClipboardEvent,
   type CSSProperties,
+  type DragEvent,
   type KeyboardEvent,
 } from "react";
 import {
@@ -13,6 +16,12 @@ import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 
 const MAX_ATTACHMENTS = 3;
+
+// Mirrors the server allowlist in apps/api/src/routes/chatbots.ts. Anything
+// outside this set is rejected client-side with a transient error pill so
+// the user gets immediate feedback instead of a 415 round-trip.
+const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+const ACCEPT_ATTR = ALLOWED_MIME_TYPES.join(",");
 
 type Attachment =
   | { id: string; status: "uploading"; previewUrl: string; blob: Blob }
@@ -39,6 +48,15 @@ export function ChatInput() {
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [captureSupported, setCaptureSupported] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [transientError, setTransientError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  // dragenter/leave fire on each child too — counter avoids overlay flicker.
+  const dragCounterRef = useRef(0);
 
   // canCaptureScreenshot reads `matchMedia` and `navigator` — defer until
   // after mount so SSR / test environments don't blow up on first render.
@@ -61,6 +79,37 @@ export function ChatInput() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Close menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        menuRef.current?.contains(target) ||
+        menuButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setMenuOpen(false);
+    };
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  // Auto-clear transient error after 4s so it doesn't linger forever.
+  useEffect(() => {
+    if (!transientError) return;
+    const id = window.setTimeout(() => setTransientError(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [transientError]);
 
   const updateAttachment = (id: string, patch: Partial<Attachment>) => {
     setAttachments((current) =>
@@ -89,7 +138,34 @@ export function ChatInput() {
     }
   };
 
+  // Filter, dedupe-by-slot, then upload. Returns the count actually queued.
+  const ingestFiles = (files: FileList | File[] | Blob[]): number => {
+    const remainingSlots = Math.max(0, MAX_ATTACHMENTS - attachments.length);
+    if (remainingSlots === 0) return 0;
+    let queued = 0;
+    let rejectedAny = false;
+    for (const f of Array.from(files)) {
+      if (queued >= remainingSlots) break;
+      const type = (f as Blob).type;
+      if (
+        !ALLOWED_MIME_TYPES.includes(
+          type as (typeof ALLOWED_MIME_TYPES)[number],
+        )
+      ) {
+        rejectedAny = true;
+        continue;
+      }
+      void startUpload(f as Blob);
+      queued += 1;
+    }
+    if (rejectedAny) {
+      setTransientError(t("attachment_unsupported_type"));
+    }
+    return queued;
+  };
+
   const handleCapture = async () => {
+    setMenuOpen(false);
     try {
       const blob = await captureScreenshot();
       await startUpload(blob);
@@ -99,12 +175,70 @@ export function ChatInput() {
     }
   };
 
+  const handlePickFile = () => {
+    setMenuOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      ingestFiles(files);
+    }
+    // Reset so picking the same file twice still fires `change`.
+    e.target.value = "";
+  };
+
   const handleRemove = (id: string) => {
     setAttachments((current) => {
       const target = current.find((a) => a.id === id);
       if (target) URL.revokeObjectURL(target.previewUrl);
       return current.filter((a) => a.id !== id);
     });
+  };
+
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+    const blobs: Blob[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind !== "file") continue;
+      const blob = item.getAsFile();
+      if (blob) blobs.push(blob);
+    }
+    if (blobs.length === 0) return;
+    e.preventDefault();
+    ingestFiles(blobs);
+  };
+
+  // Drag-and-drop handlers. We attach to the composer container so the
+  // overlay covers both the attachment row and the input row. The counter
+  // avoids dragenter/dragleave flicker as the cursor moves over children.
+  const handleDragEnter = (e: DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setDragActive(true);
+  };
+  const handleDragOver = (e: DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+  };
+  const handleDragLeave = (e: DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) setDragActive(false);
+  };
+  const handleDrop = (e: DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setDragActive(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      ingestFiles(files);
+    }
   };
 
   const readyTokens = attachments
@@ -134,6 +268,7 @@ export function ChatInput() {
   };
 
   const containerStyle: CSSProperties = {
+    position: "relative",
     padding: "12px 16px",
     borderTop: "1px solid #eee",
     display: "flex",
@@ -192,10 +327,83 @@ export function ChatInput() {
     padding: 0,
   });
 
-  const captureDisabled = attachments.length >= MAX_ATTACHMENTS || isLoading;
+  const menuStyle: CSSProperties = {
+    position: "absolute",
+    bottom: "calc(100% + 4px)",
+    left: 0,
+    background: "white",
+    border: "1px solid #e0e0e0",
+    borderRadius: 8,
+    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+    padding: 4,
+    minWidth: 180,
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column",
+  };
+
+  const menuItemStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    background: "transparent",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: 14,
+    color: "#333",
+    textAlign: "left",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  };
+
+  const dropOverlayStyle: CSSProperties = {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(255,255,255,0.92)",
+    border: `2px dashed ${config.primaryColor}`,
+    borderRadius: 4,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: config.primaryColor,
+    fontSize: 14,
+    fontWeight: 500,
+    pointerEvents: "none",
+    zIndex: 11,
+  };
+
+  const errorPillStyle: CSSProperties = {
+    alignSelf: "flex-start",
+    background: "#fef2f2",
+    color: "#b91c1c",
+    border: "1px solid #fecaca",
+    borderRadius: 12,
+    padding: "4px 10px",
+    fontSize: 12,
+  };
+
+  const attachDisabled = attachments.length >= MAX_ATTACHMENTS || isLoading;
 
   return (
-    <div style={containerStyle}>
+    <div
+      style={containerStyle}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {dragActive && (
+        <div style={dropOverlayStyle} aria-hidden="true">
+          {t("drop_files_here")}
+        </div>
+      )}
+      {transientError && (
+        <div role="alert" style={errorPillStyle}>
+          {transientError}
+        </div>
+      )}
       {attachments.length > 0 && (
         <div
           style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
@@ -212,23 +420,73 @@ export function ChatInput() {
         </div>
       )}
       <div style={rowStyle}>
-        {captureSupported && (
+        <div style={{ position: "relative" }}>
           <button
+            ref={menuButtonRef}
             type="button"
-            onClick={handleCapture}
-            disabled={captureDisabled}
-            style={iconButtonStyle(captureDisabled)}
-            aria-label={t("screenshot_capture")}
-            title={t("screenshot_capture")}
+            onClick={() => setMenuOpen((o) => !o)}
+            disabled={attachDisabled}
+            style={iconButtonStyle(attachDisabled)}
+            aria-label={t("attach_menu_open")}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            title={t("attach_menu_open")}
           >
-            <CameraIcon />
+            <PaperclipIcon />
           </button>
-        )}
+          {menuOpen && (
+            <div ref={menuRef} role="menu" style={menuStyle}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handlePickFile}
+                style={menuItemStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <ImageIcon />
+                {t("attach_photo")}
+              </button>
+              {captureSupported && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleCapture}
+                  style={menuItemStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f5f5f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <CameraIcon />
+                  {t("screenshot_capture")}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPT_ATTR}
+          multiple
+          onChange={handleFileInputChange}
+          style={{ display: "none" }}
+          aria-hidden="true"
+          tabIndex={-1}
+        />
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder={config.placeholderText}
           style={inputStyle}
           disabled={isLoading}
@@ -263,6 +521,17 @@ export function ChatInput() {
       </div>
     </div>
   );
+}
+
+// True iff the drag event carries files (vs. text/URL drags from inside
+// the page). Without this check the overlay would flash on selecting text.
+function hasFiles(e: DragEvent): boolean {
+  const types = e.dataTransfer?.types;
+  if (!types) return false;
+  for (let i = 0; i < types.length; i++) {
+    if (types[i] === "Files") return true;
+  }
+  return false;
 }
 
 function Thumbnail({
@@ -345,11 +614,49 @@ function Thumbnail({
   );
 }
 
-function CameraIcon() {
+function PaperclipIcon() {
   return (
     <svg
       width="20"
       height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
+function ImageIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

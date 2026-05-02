@@ -23,4 +23,8 @@ export const ja: Translations = {
   status_failed: "送信に失敗しました",
   screenshot_capture: "スクリーンショットを撮る",
   attachment_remove: "添付ファイルを削除",
+  attach_menu_open: "添付ファイルを追加",
+  attach_photo: "写真を選択",
+  drop_files_here: "ファイルをここにドロップ",
+  attachment_unsupported_type: "サポートされていないファイル形式",
 };

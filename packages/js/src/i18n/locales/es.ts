@@ -22,4 +22,8 @@ export const es: Translations = {
   status_failed: "Error al enviar",
   screenshot_capture: "Capturar pantalla",
   attachment_remove: "Quitar adjunto",
+  attach_menu_open: "Añadir adjunto",
+  attach_photo: "Elegir foto",
+  drop_files_here: "Suelta los archivos aquí",
+  attachment_unsupported_type: "Tipo de archivo no admitido",
 };

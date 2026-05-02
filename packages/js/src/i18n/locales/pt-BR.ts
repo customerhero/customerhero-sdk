@@ -23,4 +23,8 @@ export const ptBR: Translations = {
   status_failed: "Falha no envio",
   screenshot_capture: "Capturar tela",
   attachment_remove: "Remover anexo",
+  attach_menu_open: "Adicionar anexo",
+  attach_photo: "Escolher foto",
+  drop_files_here: "Solte os arquivos aqui",
+  attachment_unsupported_type: "Tipo de arquivo não suportado",
 };

@@ -23,4 +23,8 @@ export const zhCN: Translations = {
   status_failed: "发送失败",
   screenshot_capture: "截屏",
   attachment_remove: "移除附件",
+  attach_menu_open: "添加附件",
+  attach_photo: "选择照片",
+  drop_files_here: "将文件拖放到此处",
+  attachment_unsupported_type: "不支持的文件类型",
 };

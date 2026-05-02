@@ -23,4 +23,8 @@ export const fr: Translations = {
   status_failed: "Échec de l'envoi",
   screenshot_capture: "Capture d'écran",
   attachment_remove: "Supprimer la pièce jointe",
+  attach_menu_open: "Ajouter une pièce jointe",
+  attach_photo: "Choisir une photo",
+  drop_files_here: "Déposez les fichiers ici",
+  attachment_unsupported_type: "Type de fichier non pris en charge",
 };

@@ -23,4 +23,8 @@ export const tr: Translations = {
   status_failed: "Gönderilemedi",
   screenshot_capture: "Ekran görüntüsü al",
   attachment_remove: "Eki kaldır",
+  attach_menu_open: "Ek ekle",
+  attach_photo: "Fotoğraf seç",
+  drop_files_here: "Dosyaları buraya bırak",
+  attachment_unsupported_type: "Desteklenmeyen dosya türü",
 };

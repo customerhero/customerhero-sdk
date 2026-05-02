@@ -23,4 +23,8 @@ export const it: Translations = {
   status_failed: "Invio non riuscito",
   screenshot_capture: "Cattura schermata",
   attachment_remove: "Rimuovi allegato",
+  attach_menu_open: "Aggiungi allegato",
+  attach_photo: "Scegli foto",
+  drop_files_here: "Trascina qui i file",
+  attachment_unsupported_type: "Tipo di file non supportato",
 };

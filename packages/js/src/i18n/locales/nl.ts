@@ -23,4 +23,8 @@ export const nl: Translations = {
   status_failed: "Verzenden mislukt",
   screenshot_capture: "Schermafbeelding maken",
   attachment_remove: "Bijlage verwijderen",
+  attach_menu_open: "Bijlage toevoegen",
+  attach_photo: "Foto kiezen",
+  drop_files_here: "Sleep bestanden hier",
+  attachment_unsupported_type: "Bestandstype niet ondersteund",
 };

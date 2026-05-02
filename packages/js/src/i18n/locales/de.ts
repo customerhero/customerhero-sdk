@@ -24,4 +24,8 @@ export const de: Translations = {
   status_failed: "Senden fehlgeschlagen",
   screenshot_capture: "Bildschirmfoto erstellen",
   attachment_remove: "Anhang entfernen",
+  attach_menu_open: "Anhang hinzufügen",
+  attach_photo: "Foto auswählen",
+  drop_files_here: "Dateien hier ablegen",
+  attachment_unsupported_type: "Dateityp nicht unterstützt",
 };
