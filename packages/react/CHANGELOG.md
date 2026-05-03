@@ -1,5 +1,14 @@
 # @customerhero/react
 
+## 2.1.0
+
+### Minor Changes
+
+- - react: paperclip attachment menu with drag-and-drop and paste support
+  - react: accept PDFs in the attachment menu
+  - react: hold launcher rendering until widget config has loaded
+  - js: mark user bubble as sent on `response.ok` instead of waiting for the metadata event
+
 ## 2.0.0
 
 ### Major Changes
