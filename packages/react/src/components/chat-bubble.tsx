@@ -1,13 +1,12 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { effectiveColors, resolveScheme, sizePreset } from "@customerhero/js";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
-import { usePrefersDark } from "../use-prefers-dark";
+import { useEffectiveTheme } from "../use-effective-theme";
 
 export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
   const { toggle, config, t, isRtl } = useChat();
   const reduced = useReducedMotion();
-  const prefersDark = usePrefersDark();
+  const theme = useEffectiveTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,9 +24,8 @@ export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
       : "bottom-right"
     : config.position;
 
-  const scheme = resolveScheme(config.colorScheme, prefersDark);
-  const colors = effectiveColors(config, scheme);
-  const preset = sizePreset(config.size);
+  const colors = theme;
+  const preset = theme.size;
 
   // The launcher stays a circle by default. When a CTA label is configured,
   // the bubble becomes a wider pill so the text has somewhere to go.
@@ -53,7 +51,10 @@ export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
     justifyContent: "center",
     gap: hasLabel ? 8 : 0,
     cursor: "pointer",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+    boxShadow:
+      theme.scheme === "dark"
+        ? "0 6px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)"
+        : "0 4px 20px rgba(0,0,0,0.15)",
     zIndex: config.zIndex,
     border: "none",
     fontSize: preset.fontSize,

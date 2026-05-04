@@ -1,15 +1,8 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-import {
-  effectiveColors,
-  panelRadius,
-  resolveScheme,
-  sizePreset,
-  type PreChatField,
-  type PreChatSubmission,
-} from "@customerhero/js";
+import type { PreChatField, PreChatSubmission } from "@customerhero/js";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
-import { usePrefersDark } from "../use-prefers-dark";
+import { useEffectiveTheme } from "../use-effective-theme";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatSuggestions } from "./chat-suggestions";
@@ -348,7 +341,7 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
   const { isOpen, config, configError, t, isRtl, preChatFormVisible } =
     useChat();
   const reduced = useReducedMotion();
-  const prefersDark = usePrefersDark();
+  const theme = useEffectiveTheme();
   // Track render visibility separately to allow exit animation
   const [visible, setVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -382,10 +375,9 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
       : "bottom-right"
     : config.position;
 
-  const scheme = resolveScheme(config.colorScheme, prefersDark);
-  const colors = effectiveColors(config, scheme);
-  const preset = sizePreset(config.size);
-  const radius = panelRadius(config.cornerStyle);
+  const colors = theme;
+  const preset = theme.size;
+  const radius = theme.radius;
 
   // The panel sits above the launcher with a small gap. Vertical offset =
   // configured bottom + launcher height + 14 px breathing room.
@@ -409,7 +401,13 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
+    // In dark mode the default 0.15 opacity black shadow is invisible
+    // against a dark page; switch to a stronger shadow plus a subtle 1px
+    // light outline so the panel still reads as a separated surface.
+    boxShadow:
+      theme.scheme === "dark"
+        ? "0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)"
+        : "0 8px 40px rgba(0,0,0,0.15)",
     zIndex: config.zIndex,
     background: colors.background,
     color: colors.text,
@@ -423,15 +421,16 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
     transition: reduced ? "none" : "opacity 0.25s ease, transform 0.25s ease",
   };
 
+  const isDark = theme.scheme === "dark";
   const poweredStyle: CSSProperties = {
     textAlign: "center",
     padding: 6,
     fontSize: 10,
-    color: "#aaa",
+    color: isDark ? "rgba(255,255,255,0.45)" : "#aaa",
   };
 
   const linkStyle: CSSProperties = {
-    color: "#888",
+    color: isDark ? "rgba(255,255,255,0.6)" : "#888",
     textDecoration: "underline",
     textUnderlineOffset: 2,
   };

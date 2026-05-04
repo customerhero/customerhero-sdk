@@ -6,6 +6,7 @@ import type {
   TranslateFn,
 } from "@customerhero/js";
 import { useChat } from "../use-chat";
+import { useEffectiveTheme } from "../use-effective-theme";
 import { useReducedMotion } from "../use-reduced-motion";
 import { renderMarkdown } from "../markdown/render";
 import { ActionConfirmationCard } from "./action-confirmation-card";
@@ -357,7 +358,7 @@ function Message({
   showSuggestions,
 }: {
   message: ChatMessage;
-  config: { primaryColor: string; textColor: string };
+  config: { primaryColor: string; textColor: string; bubbleBackground: string };
   onRate: (messageId: string, rating: MessageRating) => Promise<void>;
   onSend: (value: string) => void;
   onApproveAction: (pendingId: string) => Promise<void>;
@@ -383,7 +384,7 @@ function Message({
           borderBottomRightRadius: 4,
         }
       : {
-          background: "#f0f0f0",
+          background: config.bubbleBackground,
           color: config.textColor,
           borderBottomLeftRadius: 4,
         }),
@@ -496,7 +497,6 @@ export function ChatMessages() {
     messages,
     isLoading,
     error,
-    config,
     conversationId,
     rateMessage,
     sendMessage,
@@ -504,6 +504,14 @@ export function ChatMessages() {
     cancelAction,
     t,
   } = useChat();
+  const theme = useEffectiveTheme();
+  // Adapt the per-message styling shape to the dark-aware palette so message
+  // bubbles, links, and rating buttons all read against the live background.
+  const themedConfig = {
+    primaryColor: theme.primary,
+    textColor: theme.text,
+    bubbleBackground: theme.bubbleBackground,
+  };
   const reduced = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -616,7 +624,7 @@ export function ChatMessages() {
         <Message
           key={i}
           message={msg}
-          config={config}
+          config={themedConfig}
           onRate={rateMessage}
           onSend={sendMessage}
           onApproveAction={approveAction}

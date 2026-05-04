@@ -3,7 +3,7 @@
 // part of the public SDK surface — third-party code should not import from
 // `@customerhero/react/preview`.
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useMemo, type CSSProperties } from "react";
 import type { CustomerHeroChatConfig } from "@customerhero/js";
 import { CustomerHeroProvider, useCustomerHeroClient } from "./context";
 import { ChatBubble } from "./components/chat-bubble";
@@ -20,11 +20,27 @@ export interface PreviewWidgetProps extends CustomerHeroChatConfig {
   className?: string;
 }
 
-function PreviewBootstrap() {
+function PreviewBootstrap({ config }: { config: CustomerHeroChatConfig }) {
   const client = useCustomerHeroClient();
+
+  // Seed once on mount with the initial config (animation fires here).
   useEffect(() => {
-    client.__seedForPreview();
+    client.__seedForPreview(config);
+    // Intentional: only on mount. Subsequent config changes flow through the
+    // effect below, which updates the resolved config in place WITHOUT
+    // toggling isOpen — so the open animation does not re-fire on every
+    // keystroke in the dashboard form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client]);
+
+  // Re-resolve whenever any config field changes. Stringify on the dep so
+  // nested objects (launcher, offset) are deep-compared cheaply.
+  const configKey = JSON.stringify(config);
+  useEffect(() => {
+    client.__seedForPreview(config);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, configKey]);
+
   return null;
 }
 
@@ -36,7 +52,7 @@ const wrapperStyleBase: CSSProperties = {
 /**
  * Render the chat widget for visual preview only — no API calls, no SSE,
  * no localStorage writes, input disabled. The window auto-opens. The bubble
- * + window are positioned `absolute` inside the wrapper element.
+ * and window are positioned `absolute` inside the wrapper element.
  *
  * The host passes the same config shape as `<ChatWidget>`, plus an optional
  * `colorScheme` (`light` / `dark` / `auto`) to drive the visitor-side dark
@@ -47,18 +63,20 @@ export function PreviewWidget({
   className,
   ...config
 }: PreviewWidgetProps) {
-  // Re-mount the provider whenever the input config changes so a fresh
-  // CustomerHeroChat instance picks up the new resolved palette / size /
-  // corners. Cheap because preview state is short-lived.
-  const remountKey = JSON.stringify(config);
+  // Snapshot the initial config so the provider's first mount uses it. Later
+  // updates flow through PreviewBootstrap's effect; the provider itself is
+  // never re-mounted, which keeps isOpen=true sticky and avoids re-firing
+  // the open animation on every prop change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialConfig = useMemo(() => config, []);
   return (
     <div
       className={className}
       style={{ ...wrapperStyleBase, ...style }}
       data-customerhero-preview="true"
     >
-      <CustomerHeroProvider key={remountKey} disableAutoFetch {...config}>
-        <PreviewBootstrap />
+      <CustomerHeroProvider disableAutoFetch {...initialConfig}>
+        <PreviewBootstrap config={config} />
         <ChatBubble embedded />
         <ChatWindow embedded />
       </CustomerHeroProvider>

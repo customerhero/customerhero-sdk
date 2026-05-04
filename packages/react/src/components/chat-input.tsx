@@ -15,6 +15,7 @@ import {
 } from "@customerhero/js";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
+import { useEffectiveTheme } from "../use-effective-theme";
 
 const MAX_ATTACHMENTS = 3;
 
@@ -67,6 +68,8 @@ export function ChatInput() {
     consumePendingPrefill,
     pendingPrefill,
   } = useChat();
+  const theme = useEffectiveTheme();
+  const isDark = theme.scheme === "dark";
   const reduced = useReducedMotion();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -317,7 +320,7 @@ export function ChatInput() {
   const containerStyle: CSSProperties = {
     position: "relative",
     padding: "12px 16px",
-    borderTop: "1px solid #eee",
+    borderTop: `1px solid ${theme.divider}`,
     display: "flex",
     flexDirection: "column",
     gap: 8,
@@ -337,14 +340,14 @@ export function ChatInput() {
   const TEXTAREA_MAX_HEIGHT = 140;
   const inputStyle: CSSProperties = {
     flex: 1,
-    border: "1px solid #e0e0e0",
+    border: `1px solid ${theme.divider}`,
     borderRadius: 18,
     padding: "10px 16px",
     fontSize: 14,
     lineHeight: 1.4,
     outline: "none",
-    background: "#fafafa",
-    color: config.textColor,
+    background: isDark ? "rgba(255,255,255,0.06)" : "#fafafa",
+    color: theme.text,
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     resize: "none",
@@ -357,7 +360,7 @@ export function ChatInput() {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    background: config.primaryColor,
+    background: theme.primary,
     border: "none",
     color: "white",
     cursor: isLoading ? "not-allowed" : "pointer",
@@ -420,13 +423,13 @@ export function ChatInput() {
   const dropOverlayStyle: CSSProperties = {
     position: "absolute",
     inset: 0,
-    background: "rgba(255,255,255,0.92)",
-    border: `2px dashed ${config.primaryColor}`,
+    background: isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.92)",
+    border: `2px dashed ${theme.primary}`,
     borderRadius: 4,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: config.primaryColor,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: 500,
     pointerEvents: "none",
@@ -480,42 +483,27 @@ export function ChatInput() {
         </div>
       )}
       <div style={rowStyle}>
-        <div style={{ position: "relative" }}>
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            disabled={attachDisabled}
-            style={iconButtonStyle(attachDisabled)}
-            aria-label={t("attach_menu_open")}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            title={t("attach_menu_open")}
-          >
-            <PaperclipIcon />
-          </button>
-          {menuOpen && (
-            <div ref={menuRef} role="menu" style={menuStyle}>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={handlePickFile}
-                style={menuItemStyle}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f5f5f5";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                }}
-              >
-                <ImageIcon />
-                {t("attach_photo")}
-              </button>
-              {captureSupported && (
+        {config.allowAttachments !== false && (
+          <div style={{ position: "relative" }}>
+            <button
+              ref={menuButtonRef}
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              disabled={attachDisabled}
+              style={iconButtonStyle(attachDisabled)}
+              aria-label={t("attach_menu_open")}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              title={t("attach_menu_open")}
+            >
+              <PaperclipIcon />
+            </button>
+            {menuOpen && (
+              <div ref={menuRef} role="menu" style={menuStyle}>
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={handleCapture}
+                  onClick={handlePickFile}
                   style={menuItemStyle}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#f5f5f5";
@@ -524,13 +512,30 @@ export function ChatInput() {
                     e.currentTarget.style.background = "transparent";
                   }}
                 >
-                  <CameraIcon />
-                  {t("screenshot_capture")}
+                  <ImageIcon />
+                  {t("attach_photo")}
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+                {captureSupported && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleCapture}
+                    style={menuItemStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#f5f5f5";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <CameraIcon />
+                    {t("screenshot_capture")}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         <input
           ref={fileInputRef}
           type="file"

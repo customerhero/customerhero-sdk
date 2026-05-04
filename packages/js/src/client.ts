@@ -101,6 +101,12 @@ function resolveConfig(
       side: clampInt(offsetUser.side, 0, 1000, DEFAULTS.offsetSide),
     },
     zIndex: clampInt(userConfig.zIndex, 0, 2_000_000_000, DEFAULTS.zIndex),
+    // Defaults to true — the widget shows the attach button unless the
+    // chatbot explicitly opts out via widget_config or the host passes
+    // allowAttachments=false. Server still enforces the same flag at the
+    // upload endpoint either way.
+    allowAttachments:
+      userConfig.allowAttachments ?? fetched?.allowAttachments ?? true,
   };
 }
 
@@ -213,20 +219,33 @@ export class CustomerHeroChat {
   }
 
   /**
-   * Mark the constructor-resolved config as loaded and put the client into
-   * read-only preview mode without hitting the API. Used by
-   * `@customerhero/react/preview` to render the widget against a host-supplied
-   * config (the dashboard preview pane). Public API consumers should not
-   * call this — re-mount the widget instead.
+   * Mark the config as loaded and put the client into read-only preview
+   * mode without hitting the API. Used by `@customerhero/react/preview` to
+   * render the widget against a host-supplied config (the dashboard preview
+   * pane). Public API consumers should not call this.
+   *
+   * Pass a config to re-resolve and update the rendered colors/size/launcher
+   * in place. Callers should reuse the same client instance across config
+   * changes so the open animation only fires once.
    *
    * @internal
    */
-  __seedForPreview(): void {
+  __seedForPreview(config?: CustomerHeroChatConfig): void {
+    const resolved = config ? resolveConfig(config) : this.state.config;
+    if (config) this.userConfig = config;
+    // In preview mode there are never real conversations, so the message
+    // list mirrors the welcome message verbatim. Re-seed on every call so
+    // edits to the welcome text in the dashboard show up live.
+    const seededMessages: ChatMessage[] = resolved.welcomeMessage
+      ? [{ role: "bot" as const, content: resolved.welcomeMessage }]
+      : [];
     this.setState({
+      config: resolved,
       configLoaded: true,
       configError: null,
       readOnly: true,
       isOpen: true,
+      messages: seededMessages,
     });
   }
 

@@ -61,6 +61,11 @@ export interface CustomerHeroChatConfig {
   /** Z-index override for sites whose overlays clip the widget. Defaults
    *  to 99999. Capped at 2_000_000_000. */
   zIndex?: number;
+  /** When false, the input's attach button is hidden so visitors can't
+   *  even attempt an upload (the server enforces the same flag). Defaults
+   *  to true. Per-chatbot, sourced from the public widget config endpoint
+   *  but overrideable on the host. */
+  allowAttachments?: boolean;
 }
 
 import type { StringOverrides, SupportedLocale } from "./i18n";
@@ -94,6 +99,7 @@ export interface ResolvedConfig {
   };
   offset: { bottom: number; side: number };
   zIndex: number;
+  allowAttachments: boolean;
 }
 
 // Source citation emitted inline in bot replies as `[1]`, `[2]` markers and

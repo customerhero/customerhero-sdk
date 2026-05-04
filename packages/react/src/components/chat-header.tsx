@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
+import { useEffectiveTheme } from "../use-effective-theme";
 
 export function ChatHeader() {
   const { config, close, reset, t } = useChat();
   const reduced = useReducedMotion();
+  const theme = useEffectiveTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -20,7 +22,7 @@ export function ChatHeader() {
   }, [menuOpen]);
 
   const headerStyle: CSSProperties = {
-    background: config.primaryColor,
+    background: theme.primary,
     padding: 16,
     display: "flex",
     alignItems: "center",
