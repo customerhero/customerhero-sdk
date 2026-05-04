@@ -26,5 +26,7 @@ export const pl: Translations = {
   attach_menu_open: "Dodaj załącznik",
   attach_photo: "Wybierz plik",
   drop_files_here: "Upuść pliki tutaj",
+  incident_dismiss: "Zamknij",
+  incident_default_link_label: "Dowiedz się więcej",
   attachment_unsupported_type: "Nieobsługiwany typ pliku",
 };

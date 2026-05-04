@@ -28,6 +28,8 @@ export type TranslationKey =
   | "attach_menu_open"
   | "attach_photo"
   | "drop_files_here"
-  | "attachment_unsupported_type";
+  | "attachment_unsupported_type"
+  | "incident_dismiss"
+  | "incident_default_link_label";
 
 export type Translations = Record<TranslationKey, string>;

@@ -26,5 +26,7 @@ export const zhCN: Translations = {
   attach_menu_open: "添加附件",
   attach_photo: "选择文件",
   drop_files_here: "将文件拖放到此处",
+  incident_dismiss: "关闭",
+  incident_default_link_label: "了解更多",
   attachment_unsupported_type: "不支持的文件类型",
 };

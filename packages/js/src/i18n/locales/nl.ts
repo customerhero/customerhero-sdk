@@ -26,5 +26,7 @@ export const nl: Translations = {
   attach_menu_open: "Bijlage toevoegen",
   attach_photo: "Bestand kiezen",
   drop_files_here: "Sleep bestanden hier",
+  incident_dismiss: "Sluiten",
+  incident_default_link_label: "Meer informatie",
   attachment_unsupported_type: "Bestandstype niet ondersteund",
 };

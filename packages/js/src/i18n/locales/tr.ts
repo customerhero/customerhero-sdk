@@ -26,5 +26,7 @@ export const tr: Translations = {
   attach_menu_open: "Ek ekle",
   attach_photo: "Dosya seç",
   drop_files_here: "Dosyaları buraya bırak",
+  incident_dismiss: "Kapat",
+  incident_default_link_label: "Daha fazla bilgi",
   attachment_unsupported_type: "Desteklenmeyen dosya türü",
 };

@@ -27,6 +27,7 @@ import type {
   PreChatFormConfig,
   PreChatSubmission,
   ConsentSettings,
+  IncidentBanner,
 } from "./types";
 
 type Listener = (state: ChatState) => void;
@@ -62,9 +63,61 @@ function resolveConfig(
   };
 }
 
+// Defensive parse of the incident-banner field on the public widget config
+// payload. The server already validates, but a stale CDN cache or a future
+// schema bump could deliver a partial shape; we'd rather drop the banner than
+// throw inside the widget render. Also re-checks `expiresAt` so a long-cached
+// payload doesn't keep showing a stale outage notice past the operator ETA.
+function sanitizeIncidentBanner(input: unknown): IncidentBanner | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as Record<string, unknown>;
+  const sev = raw.severity;
+  if (sev !== "info" && sev !== "warning" && sev !== "outage") return null;
+  if (typeof raw.title !== "string" || raw.title.length === 0) return null;
+  if (typeof raw.expiresAt === "string") {
+    const t = Date.parse(raw.expiresAt);
+    if (!Number.isNaN(t) && t <= Date.now()) return null;
+  }
+  const out: IncidentBanner = { severity: sev, title: raw.title };
+  if (typeof raw.body === "string") out.body = raw.body;
+  if (typeof raw.eta === "string") out.eta = raw.eta;
+  if (raw.link && typeof raw.link === "object") {
+    const link = raw.link as Record<string, unknown>;
+    if (typeof link.url === "string") {
+      out.link = { url: link.url };
+      if (typeof link.label === "string") out.link.label = link.label;
+    }
+  }
+  if (typeof raw.expiresAt === "string") out.expiresAt = raw.expiresAt;
+  return out;
+}
+
+// Stable identity for an incident banner, used to detect content changes so
+// a freshly edited banner reappears after a prior dismissal.
+function bannerKey(banner: IncidentBanner | null): string | null {
+  if (!banner) return null;
+  return JSON.stringify([
+    banner.severity,
+    banner.title,
+    banner.body ?? "",
+    banner.eta ?? "",
+    banner.link?.url ?? "",
+    banner.link?.label ?? "",
+    banner.expiresAt ?? "",
+  ]);
+}
+
 function getStorage(): Storage | null {
   try {
-    return typeof window !== "undefined" ? window.localStorage : null;
+    if (typeof window !== "undefined" && window.localStorage)
+      return window.localStorage;
+    // SSR-safe fallback: some environments expose localStorage on globalThis
+    // (e.g. test stubs, edge runtimes) without a `window` global.
+    if (typeof globalThis !== "undefined") {
+      const ls = (globalThis as { localStorage?: Storage }).localStorage;
+      if (ls) return ls;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -112,6 +165,8 @@ export class CustomerHeroChat {
       consent: this.readStoredConsent(),
       pendingTriggerId: null,
       pendingPrefill: null,
+      incidentBanner: null,
+      incidentBannerDismissed: false,
     };
   }
 
@@ -202,15 +257,30 @@ export class CustomerHeroChat {
       const fetched = (await response.json()) as Partial<ResolvedConfig> & {
         triggers?: TriggerDefinition[];
         preChatForm?: PreChatFormConfig;
+        incidentBanner?: IncidentBanner | null;
       };
       const resolved = resolveConfig(this.userConfig, fetched);
       const triggers = Array.isArray(fetched.triggers) ? fetched.triggers : [];
       const preChatForm = fetched.preChatForm ?? null;
+      const incidentBanner = sanitizeIncidentBanner(fetched.incidentBanner);
+      // Banner content changed → reset visitor's dismissed flag so the new
+      // notice is visible. We compare a stable serialization rather than
+      // identity since the banner is reconstructed each fetch.
+      const prevBannerKey = bannerKey(this.state.incidentBanner);
+      const nextBannerKey = bannerKey(incidentBanner);
+      const dismissedFromStorage =
+        nextBannerKey && nextBannerKey === this.readStoredBannerDismissal();
+      const incidentBannerDismissed =
+        nextBannerKey === prevBannerKey
+          ? this.state.incidentBannerDismissed || !!dismissedFromStorage
+          : !!dismissedFromStorage;
       this.setState({
         config: resolved,
         configLoaded: true,
         triggers,
         preChatForm,
+        incidentBanner,
+        incidentBannerDismissed,
       });
       // Server-delivered string overrides require rebuilding the translator
       // so subsequent `t()` calls pick them up.
@@ -776,6 +846,40 @@ export class CustomerHeroChat {
    *  the source of truth. */
   setTraits(traits: Record<string, string | number | boolean>): void {
     this.triggersRuntime?.setTraits(traits);
+  }
+
+  /** Hide the active incident banner for this visitor. Persisted in
+   *  localStorage so a refresh keeps it dismissed; resets automatically
+   *  when the operator changes the banner content. No-op when no banner
+   *  is showing. */
+  dismissIncidentBanner(): void {
+    const key = bannerKey(this.state.incidentBanner);
+    if (!key) return;
+    this.writeStoredBannerDismissal(key);
+    this.setState({ incidentBannerDismissed: true });
+  }
+
+  private readStoredBannerDismissal(): string | null {
+    try {
+      return (
+        this.storage?.getItem(
+          `ch_incident_dismissed_${this.userConfig.chatbotId}`,
+        ) ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private writeStoredBannerDismissal(key: string): void {
+    try {
+      this.storage?.setItem(
+        `ch_incident_dismissed_${this.userConfig.chatbotId}`,
+        key,
+      );
+    } catch {
+      // best-effort
+    }
   }
 
   /** Submit pre-chat form answers. Synthesizes a customer record server-side

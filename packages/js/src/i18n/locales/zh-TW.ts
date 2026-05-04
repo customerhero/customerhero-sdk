@@ -26,5 +26,7 @@ export const zhTW: Translations = {
   attach_menu_open: "新增附件",
   attach_photo: "選擇檔案",
   drop_files_here: "將檔案拖放到此處",
+  incident_dismiss: "關閉",
+  incident_default_link_label: "瞭解更多",
   attachment_unsupported_type: "不支援的檔案類型",
 };

@@ -26,5 +26,7 @@ export const ar: Translations = {
   attach_menu_open: "إضافة مرفق",
   attach_photo: "اختر ملفًا",
   drop_files_here: "أفلت الملفات هنا",
+  incident_dismiss: "إغلاق",
+  incident_default_link_label: "اعرف المزيد",
   attachment_unsupported_type: "نوع الملف غير مدعوم",
 };

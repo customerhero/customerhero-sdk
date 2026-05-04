@@ -26,5 +26,7 @@ export const ja: Translations = {
   attach_menu_open: "添付ファイルを追加",
   attach_photo: "ファイルを選択",
   drop_files_here: "ファイルをここにドロップ",
+  incident_dismiss: "閉じる",
+  incident_default_link_label: "詳細を見る",
   attachment_unsupported_type: "サポートされていないファイル形式",
 };

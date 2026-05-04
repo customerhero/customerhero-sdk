@@ -43,6 +43,7 @@ export type {
   PreChatFormConfig,
   PreChatSubmission,
   ConsentSettings,
+  IncidentBanner,
 } from "./types";
 export { evaluate, pickFire, type VisitorContext } from "./triggers";
 export {

@@ -26,5 +26,7 @@ export const ko: Translations = {
   attach_menu_open: "첨부 파일 추가",
   attach_photo: "파일 선택",
   drop_files_here: "파일을 여기에 놓기",
+  incident_dismiss: "닫기",
+  incident_default_link_label: "자세히 알아보기",
   attachment_unsupported_type: "지원되지 않는 파일 형식",
 };

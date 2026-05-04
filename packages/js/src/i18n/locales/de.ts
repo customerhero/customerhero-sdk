@@ -27,5 +27,7 @@ export const de: Translations = {
   attach_menu_open: "Anhang hinzufügen",
   attach_photo: "Datei auswählen",
   drop_files_here: "Dateien hier ablegen",
+  incident_dismiss: "Schließen",
+  incident_default_link_label: "Mehr erfahren",
   attachment_unsupported_type: "Dateityp nicht unterstützt",
 };

@@ -6,6 +6,7 @@ import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatSuggestions } from "./chat-suggestions";
 import { ChatInput } from "./chat-input";
+import { IncidentBanner } from "./incident-banner";
 
 function ConfigError({ message, title }: { message: string; title: string }) {
   const errorStyle: CSSProperties = {
@@ -412,6 +413,7 @@ export function ChatWindow() {
   return (
     <div style={style} dir={isRtl ? "rtl" : "ltr"}>
       <ChatHeader />
+      <IncidentBanner />
       {configError ? (
         <ConfigError title={t("unable_to_load")} message={configError} />
       ) : preChatFormVisible ? (

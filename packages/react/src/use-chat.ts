@@ -38,6 +38,7 @@ export interface UseChatReturn extends ChatState {
   cancelPreChatForm: () => void;
   fireTrigger: (triggerId: string) => void;
   consumePendingPrefill: () => string | null;
+  dismissIncidentBanner: () => void;
 }
 
 export function useChat(): UseChatReturn {
@@ -104,6 +105,10 @@ export function useChat(): UseChatReturn {
     ),
     consumePendingPrefill: useCallback(
       () => client.consumePendingPrefill(),
+      [client],
+    ),
+    dismissIncidentBanner: useCallback(
+      () => client.dismissIncidentBanner(),
       [client],
     ),
   };

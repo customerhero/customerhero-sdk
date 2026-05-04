@@ -247,6 +247,27 @@ export interface PreChatSubmission {
   properties?: Record<string, string | number | boolean>;
 }
 
+// Operator-controlled banner surfaced in the widget to deflect "is X down?"
+// volume during outages and scheduled maintenance. Sent by the server on the
+// public widget config endpoint as the *effective* banner — the merge of the
+// org-level default and the per-chatbot override is done server-side, so the
+// SDK just renders what arrives. `null` / absent = no banner.
+//
+// The server also filters out expired banners before sending, but the widget
+// re-checks `expiresAt` so a stale long-cached config payload doesn't keep
+// showing an outage notice past the operator's stated ETA.
+export interface IncidentBanner {
+  severity: "info" | "warning" | "outage";
+  title: string;
+  body?: string;
+  /** Free-text human ETA, e.g. "Back online by 14:00 UTC". */
+  eta?: string;
+  /** Optional CTA — typically a status-page incident URL. */
+  link?: { url: string; label?: string };
+  /** ISO 8601 UTC. After this time the widget hides the banner. */
+  expiresAt?: string;
+}
+
 export interface ConsentSettings {
   /** When true, all condition kinds are evaluated. When false (default), only
    *  direct launcher clicks fire — URL/time/scroll/exit-intent/trait
@@ -288,4 +309,9 @@ export interface ChatState {
   /** When set, the host should preload this text into the input. Cleared
    *  once the host consumes it (or when the conversation starts). */
   pendingPrefill: string | null;
+  /** Operator-controlled incident banner. `null` when none is active. */
+  incidentBanner: IncidentBanner | null;
+  /** True when the visitor has dismissed the active banner this session.
+   *  Reset whenever a new banner (different content) lands. */
+  incidentBannerDismissed: boolean;
 }

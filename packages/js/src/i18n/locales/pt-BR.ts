@@ -26,5 +26,7 @@ export const ptBR: Translations = {
   attach_menu_open: "Adicionar anexo",
   attach_photo: "Escolher arquivo",
   drop_files_here: "Solte os arquivos aqui",
+  incident_dismiss: "Dispensar",
+  incident_default_link_label: "Saiba mais",
   attachment_unsupported_type: "Tipo de arquivo não suportado",
 };

@@ -26,5 +26,7 @@ export const fr: Translations = {
   attach_menu_open: "Ajouter une pièce jointe",
   attach_photo: "Choisir un fichier",
   drop_files_here: "Déposez les fichiers ici",
+  incident_dismiss: "Ignorer",
+  incident_default_link_label: "En savoir plus",
   attachment_unsupported_type: "Type de fichier non pris en charge",
 };

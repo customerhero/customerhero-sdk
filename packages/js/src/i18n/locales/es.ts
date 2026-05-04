@@ -25,5 +25,7 @@ export const es: Translations = {
   attach_menu_open: "Añadir adjunto",
   attach_photo: "Elegir archivo",
   drop_files_here: "Suelta los archivos aquí",
+  incident_dismiss: "Descartar",
+  incident_default_link_label: "Más información",
   attachment_unsupported_type: "Tipo de archivo no admitido",
 };

@@ -26,5 +26,7 @@ export const ptPT: Translations = {
   attach_menu_open: "Adicionar anexo",
   attach_photo: "Escolher ficheiro",
   drop_files_here: "Largue os ficheiros aqui",
+  incident_dismiss: "Dispensar",
+  incident_default_link_label: "Saiba mais",
   attachment_unsupported_type: "Tipo de ficheiro não suportado",
 };

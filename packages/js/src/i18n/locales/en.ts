@@ -25,5 +25,7 @@ export const en: Translations = {
   attach_menu_open: "Add attachment",
   attach_photo: "Choose file",
   drop_files_here: "Drop files here",
+  incident_dismiss: "Dismiss",
+  incident_default_link_label: "Learn more",
   attachment_unsupported_type: "Unsupported file type",
 };
