@@ -135,11 +135,20 @@ export function IncidentBanner() {
     color: palette.fgMuted,
   };
 
+  // Footer row that holds the ETA pill + the link CTA on a single line.
+  // `flex-wrap` keeps the layout from clipping when both are long.
+  const footerRowStyle: CSSProperties = {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+  };
+
   // ETA renders as a subtle inline pill rather than italic text — reads as
   // metadata at a glance without competing with the title for emphasis.
   const etaStyle: CSSProperties = {
     display: "inline-block",
-    marginTop: 6,
     padding: "2px 8px",
     borderRadius: 4,
     fontSize: 11,
@@ -153,7 +162,6 @@ export function IncidentBanner() {
     display: "inline-flex",
     alignItems: "center",
     gap: 4,
-    marginTop: 8,
     color: palette.accent,
     textDecoration: linkHover ? "underline" : "none",
     textUnderlineOffset: 3,
@@ -192,35 +200,37 @@ export function IncidentBanner() {
         {incidentBanner.body ? (
           <p style={bodyStyle}>{incidentBanner.body}</p>
         ) : null}
-        {incidentBanner.eta ? (
-          <span style={etaStyle}>{incidentBanner.eta}</span>
-        ) : null}
-        {incidentBanner.link ? (
-          <div>
-            <a
-              href={incidentBanner.link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={linkStyle}
-              onMouseEnter={() => setLinkHover(true)}
-              onMouseLeave={() => setLinkHover(false)}
-            >
-              {incidentBanner.link.label ?? t("incident_default_link_label")}
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+        {incidentBanner.eta || incidentBanner.link ? (
+          <div style={footerRowStyle}>
+            {incidentBanner.eta ? (
+              <span style={etaStyle}>{incidentBanner.eta}</span>
+            ) : null}
+            {incidentBanner.link ? (
+              <a
+                href={incidentBanner.link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={linkStyle}
+                onMouseEnter={() => setLinkHover(true)}
+                onMouseLeave={() => setLinkHover(false)}
               >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </a>
+                {incidentBanner.link.label ?? t("incident_default_link_label")}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </a>
+            ) : null}
           </div>
         ) : null}
       </div>
