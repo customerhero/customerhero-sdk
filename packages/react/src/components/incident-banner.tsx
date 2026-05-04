@@ -1,31 +1,45 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import type { IncidentBanner as IncidentBannerData } from "@customerhero/js";
 import { useChat } from "../use-chat";
 
-// Color tokens per severity. Flat backgrounds with a left border accent so
-// the banner reads as informational rather than competing with the header's
-// brand color block above it.
+// Per-severity color tokens. Soft tinted backgrounds with a matching
+// foreground for the title and a darker accent for the icon + link CTA.
+// Calibrated to read informational below the brand-colored header rather
+// than competing with it.
 const PALETTE: Record<
   IncidentBannerData["severity"],
-  { bg: string; fg: string; accent: string; iconColor: string }
+  {
+    bg: string;
+    fg: string;
+    fgMuted: string;
+    accent: string;
+    iconBg: string;
+    iconFg: string;
+  }
 > = {
   info: {
     bg: "#EFF6FF",
     fg: "#1E3A8A",
+    fgMuted: "#3B5BA9",
     accent: "#2563EB",
-    iconColor: "#2563EB",
+    iconBg: "#DBEAFE",
+    iconFg: "#2563EB",
   },
   warning: {
     bg: "#FFFBEB",
     fg: "#78350F",
-    accent: "#D97706",
-    iconColor: "#D97706",
+    fgMuted: "#92541A",
+    accent: "#B45309",
+    iconBg: "#FEF3C7",
+    iconFg: "#B45309",
   },
   outage: {
     bg: "#FEF2F2",
-    fg: "#7F1D1D",
+    fg: "#991B1B",
+    fgMuted: "#B23A3A",
     accent: "#DC2626",
-    iconColor: "#DC2626",
+    iconBg: "#FEE2E2",
+    iconFg: "#DC2626",
   },
 };
 
@@ -37,12 +51,12 @@ function SeverityIcon({
   color: string;
 }) {
   const props = {
-    width: 16,
-    height: 16,
+    width: 14,
+    height: 14,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: color,
-    strokeWidth: 2,
+    strokeWidth: 2.25,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
@@ -51,8 +65,8 @@ function SeverityIcon({
     return (
       <svg {...props}>
         <circle cx="12" cy="12" r="10" />
-        <line x1="15" y1="9" x2="9" y2="15" />
-        <line x1="9" y1="9" x2="15" y2="15" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
     );
   }
@@ -77,6 +91,8 @@ function SeverityIcon({
 export function IncidentBanner() {
   const { incidentBanner, incidentBannerDismissed, dismissIncidentBanner, t } =
     useChat();
+  const [linkHover, setLinkHover] = useState(false);
+  const [closeHover, setCloseHover] = useState(false);
 
   if (!incidentBanner || incidentBannerDismissed) return null;
 
@@ -85,63 +101,92 @@ export function IncidentBanner() {
   const wrap: CSSProperties = {
     background: palette.bg,
     color: palette.fg,
-    borderLeft: `3px solid ${palette.accent}`,
-    padding: "10px 12px",
+    padding: "12px 14px 12px 12px",
     display: "flex",
     gap: 10,
     alignItems: "flex-start",
     fontSize: 13,
-    lineHeight: 1.4,
+    lineHeight: 1.45,
+    boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.04)",
+  };
+
+  const iconBadge: CSSProperties = {
+    width: 22,
+    height: 22,
+    borderRadius: "50%",
+    background: palette.iconBg,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 1,
   };
 
   const titleStyle: CSSProperties = {
     margin: 0,
     fontSize: 13,
     fontWeight: 600,
+    letterSpacing: "-0.005em",
   };
 
   const bodyStyle: CSSProperties = {
-    margin: "2px 0 0",
-    fontSize: 12,
-    opacity: 0.9,
+    margin: "3px 0 0",
+    fontSize: 12.5,
+    color: palette.fgMuted,
   };
 
+  // ETA renders as a subtle inline pill rather than italic text — reads as
+  // metadata at a glance without competing with the title for emphasis.
   const etaStyle: CSSProperties = {
-    margin: "4px 0 0",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    padding: "2px 6px",
+    borderRadius: 4,
     fontSize: 11,
-    opacity: 0.75,
-    fontStyle: "italic",
+    fontWeight: 500,
+    color: palette.accent,
+    background: palette.iconBg,
+    lineHeight: 1.2,
   };
 
   const linkStyle: CSSProperties = {
-    display: "inline-block",
-    marginTop: 6,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
     color: palette.accent,
-    textDecoration: "underline",
-    textUnderlineOffset: 2,
-    fontSize: 12,
-    fontWeight: 500,
+    textDecoration: linkHover ? "underline" : "none",
+    textUnderlineOffset: 3,
+    fontSize: 12.5,
+    fontWeight: 600,
   };
 
-  const dismissButtonStyle: CSSProperties = {
-    background: "none",
+  const closeButtonStyle: CSSProperties = {
+    background: closeHover ? "rgba(0,0,0,0.06)" : "transparent",
     border: "none",
-    color: palette.fg,
+    color: palette.fgMuted,
     cursor: "pointer",
-    opacity: 0.6,
-    padding: 2,
+    padding: 4,
+    borderRadius: 6,
     flexShrink: 0,
     lineHeight: 0,
+    marginTop: -2,
+    marginRight: -2,
+    transition: "background-color 0.12s ease",
   };
 
+  // Outage gets `role="alert"` for assistive-tech immediacy; info/warning
+  // are `role="status"` so they're announced politely.
   const role = incidentBanner.severity === "outage" ? "alert" : "status";
 
   return (
     <div role={role} style={wrap}>
-      <div style={{ paddingTop: 1, flexShrink: 0 }}>
+      <div style={iconBadge}>
         <SeverityIcon
           severity={incidentBanner.severity}
-          color={palette.iconColor}
+          color={palette.iconFg}
         />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -150,30 +195,60 @@ export function IncidentBanner() {
           <p style={bodyStyle}>{incidentBanner.body}</p>
         ) : null}
         {incidentBanner.eta ? (
-          <p style={etaStyle}>{incidentBanner.eta}</p>
+          <span style={etaStyle}>
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            {incidentBanner.eta}
+          </span>
         ) : null}
         {incidentBanner.link ? (
-          <a
-            href={incidentBanner.link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={linkStyle}
-          >
-            {incidentBanner.link.label ?? t("incident_default_link_label")}
-          </a>
+          <div>
+            <a
+              href={incidentBanner.link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={linkStyle}
+              onMouseEnter={() => setLinkHover(true)}
+              onMouseLeave={() => setLinkHover(false)}
+            >
+              {incidentBanner.link.label ?? t("incident_default_link_label")}
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </a>
+          </div>
         ) : null}
       </div>
       <button
         type="button"
         onClick={dismissIncidentBanner}
         aria-label={t("incident_dismiss")}
-        style={dismissButtonStyle}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = "1";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = "0.6";
-        }}
+        style={closeButtonStyle}
+        onMouseEnter={() => setCloseHover(true)}
+        onMouseLeave={() => setCloseHover(false)}
       >
         <svg
           width="14"
