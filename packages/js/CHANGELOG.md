@@ -1,5 +1,16 @@
 # @customerhero/js
 
+## 2.1.1
+
+### Patch Changes
+
+- fix(react): widget UX polish
+  - Auto-focus the text input when the widget opens so users can start typing immediately.
+  - Keep "Capture screenshot" on a single line in the attach menu.
+  - Right-align the "Sent" status indicator under user messages.
+  - Smarter autoscroll while streaming: stop fighting the user when they scroll up, and anchor the top of a long reply (with a small gap) instead of pinning the bottom so the start of the message stays in view.
+  - Render visible bullets / numbers for markdown `ul` / `ol` lists, including on host pages whose CSS resets strip list markers.
+
 ## 2.1.0
 
 ### Patch Changes

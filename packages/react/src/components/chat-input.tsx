@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ClipboardEvent,
@@ -74,6 +75,7 @@ export function ChatInput() {
   const [transientError, setTransientError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLTextAreaElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   // dragenter/leave fire on each child too — counter avoids overlay flicker.
@@ -84,6 +86,25 @@ export function ChatInput() {
   useEffect(() => {
     setCaptureSupported(canCaptureScreenshot());
   }, []);
+
+  // Auto-focus the text input when the composer mounts (the widget just
+  // opened, or the pre-chat form was completed). Wait one frame so the
+  // window's open animation doesn't fight focus on iOS Safari.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => textInputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Auto-grow the textarea: collapse to "auto" so scrollHeight reflects the
+  // intrinsic content height, then snap height back to that. The CSS
+  // maxHeight caps growth and switches the textarea to internal scrolling
+  // once content exceeds it. useLayoutEffect avoids a one-frame flash.
+  useLayoutEffect(() => {
+    const el = textInputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
 
   // Drain any prefill set by an `open_with_prefill` trigger. Runs once per
   // pendingPrefill change so a new trigger after the first one still wins.
@@ -222,7 +243,7 @@ export function ChatInput() {
     });
   };
 
-  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items || items.length === 0) return;
     const blobs: Blob[] = [];
@@ -303,21 +324,32 @@ export function ChatInput() {
 
   const rowStyle: CSSProperties = {
     display: "flex",
-    alignItems: "center",
+    // Anchor the icon buttons to the bottom of the row so a multi-line
+    // textarea grows upward without dragging them along.
+    alignItems: "flex-end",
     gap: 8,
   };
 
+  // Cap auto-grow at ~6 lines of 14px text. Beyond this, the textarea
+  // becomes internally scrollable instead of pushing the whole composer
+  // upwards forever.
+  const TEXTAREA_MAX_HEIGHT = 140;
   const inputStyle: CSSProperties = {
     flex: 1,
     border: "1px solid #e0e0e0",
-    borderRadius: 24,
+    borderRadius: 18,
     padding: "10px 16px",
     fontSize: 14,
+    lineHeight: 1.4,
     outline: "none",
     background: "#fafafa",
     color: config.textColor,
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    resize: "none",
+    overflowY: "auto",
+    maxHeight: TEXTAREA_MAX_HEIGHT,
+    boxSizing: "border-box",
   };
 
   const sendButtonStyle: CSSProperties = {
@@ -379,6 +411,7 @@ export function ChatInput() {
     fontSize: 14,
     color: "#333",
     textAlign: "left",
+    whiteSpace: "nowrap",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   };
@@ -506,8 +539,9 @@ export function ChatInput() {
           aria-hidden="true"
           tabIndex={-1}
         />
-        <input
-          type="text"
+        <textarea
+          ref={textInputRef}
+          rows={1}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}

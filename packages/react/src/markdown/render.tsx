@@ -464,10 +464,14 @@ export function renderMarkdown(
                   margin: "0 0 8px",
                   paddingLeft: 20,
                   lineHeight: 1.5,
+                  listStyleType: "disc",
+                  listStylePosition: "outside",
                 }}
               >
                 {block.lines.map((l, i) => (
-                  <li key={i}>{renderInline(l)}</li>
+                  <li key={i} style={{ display: "list-item" }}>
+                    {renderInline(l)}
+                  </li>
                 ))}
               </ul>
             );
@@ -479,10 +483,14 @@ export function renderMarkdown(
                   margin: "0 0 8px",
                   paddingLeft: 22,
                   lineHeight: 1.5,
+                  listStyleType: "decimal",
+                  listStylePosition: "outside",
                 }}
               >
                 {block.lines.map((l, i) => (
-                  <li key={i}>{renderInline(l)}</li>
+                  <li key={i} style={{ display: "list-item" }}>
+                    {renderInline(l)}
+                  </li>
                 ))}
               </ol>
             );

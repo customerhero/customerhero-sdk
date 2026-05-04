@@ -21,11 +21,11 @@ function MessageStatusPill({
   const containerStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
+    justifyContent: "flex-end",
     gap: 4,
     marginTop: 2,
     fontSize: 11,
     color: failed ? "#b91c1c" : "#888",
-    alignSelf: "flex-end",
   };
   const labelKey =
     status === "sending"
@@ -393,7 +393,12 @@ function Message({
 
   return (
     <AnimatedMessage isUser={isUser} animate={animate} reduced={reduced}>
-      <div style={bubbleStyle}>
+      <div
+        style={bubbleStyle}
+        data-streaming-bubble={
+          !isUser && message.streaming ? "true" : undefined
+        }
+      >
         {isUser ? (
           message.content
         ) : (
@@ -500,17 +505,76 @@ export function ChatMessages() {
     t,
   } = useChat();
   const reduced = useReducedMotion();
+  const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
   const prevMessageCount = useRef(0);
+  // Stick to the bottom while the user is reading the latest content. Goes
+  // false the moment they scroll up, comes back true if they scroll back
+  // near the bottom themselves. Programmatic scrolls are filtered out by a
+  // short suppression window so they don't toggle this themselves.
+  const stickRef = useRef(true);
+  const suppressScrollRef = useRef(false);
+
+  const autoScrollTo = (top: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    suppressScrollRef.current = true;
+    el.scrollTop = top;
+    // One frame is enough for the resulting scroll event to flush.
+    requestAnimationFrame(() => {
+      suppressScrollRef.current = false;
+    });
+  };
+
+  const handleScroll = () => {
+    if (suppressScrollRef.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickRef.current = distFromBottom < 60;
+  };
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: isFirstRender.current || reduced ? "auto" : "smooth",
-      });
-      isFirstRender.current = false;
+    const el = containerRef.current;
+    if (!el) return;
+    // A fresh user message means a new turn started — re-stick so we follow
+    // their own message and the response that follows.
+    const lastMsg = messages[messages.length - 1];
+    if (
+      messages.length > prevMessageCount.current &&
+      lastMsg?.role === "user"
+    ) {
+      stickRef.current = true;
     }
+    if (!stickRef.current && !isFirstRender.current) {
+      // User has scrolled away — leave them alone.
+      return;
+    }
+    // If a streaming bot bubble is taller than the viewport, anchor its top
+    // to the top of the scroll container instead of pinning the bottom.
+    // Otherwise the start of the reply scrolls off-screen as tokens arrive.
+    const streamingBubble = el.querySelector<HTMLElement>(
+      "[data-streaming-bubble='true']",
+    );
+    let target = el.scrollHeight - el.clientHeight;
+    if (
+      streamingBubble &&
+      streamingBubble.offsetHeight > el.clientHeight - 24
+    ) {
+      const containerTop = el.getBoundingClientRect().top;
+      const bubbleTop = streamingBubble.getBoundingClientRect().top;
+      // Leave a bit of breathing room above the bubble so it doesn't sit
+      // flush against the header — purely aesthetic, but a flush bubble
+      // looks like content has been clipped.
+      const TOP_GAP = 16;
+      target = el.scrollTop + (bubbleTop - containerTop) - TOP_GAP;
+      // Once we anchor, stop sticking — the user will scroll manually from
+      // here. Without this the next render would try to pin the bottom again.
+      stickRef.current = false;
+    }
+    autoScrollTo(target);
+    isFirstRender.current = false;
   }, [messages, isLoading, reduced]);
 
   // Track which messages are "new" (added after initial load)
@@ -547,7 +611,7 @@ export function ChatMessages() {
     isLoading && (lastMsg?.role !== "bot" || lastMsg.streaming !== true);
 
   return (
-    <div style={containerStyle}>
+    <div ref={containerRef} style={containerStyle} onScroll={handleScroll}>
       {messages.map((msg, i) => (
         <Message
           key={i}

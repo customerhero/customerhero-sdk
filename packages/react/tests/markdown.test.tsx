@@ -288,12 +288,14 @@ describe("renderMarkdown — blocks", () => {
 
   it("renders an unordered list with <ul><li>", () => {
     const out = html("- one\n- two");
-    expect(out).toMatch(/<ul[^>]*>[\s\S]*<li>one<\/li>[\s\S]*<li>two<\/li>/);
+    expect(out).toMatch(
+      /<ul[^>]*>[\s\S]*<li[^>]*>one<\/li>[\s\S]*<li[^>]*>two<\/li>/,
+    );
   });
 
   it("renders an ordered list with <ol><li>", () => {
     const out = html("1. one\n2. two");
-    expect(out).toMatch(/<ol[^>]*>[\s\S]*<li>one<\/li>/);
+    expect(out).toMatch(/<ol[^>]*>[\s\S]*<li[^>]*>one<\/li>/);
   });
 
   it("renders a fenced code block as <pre><code>", () => {
