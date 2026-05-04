@@ -23,6 +23,44 @@ export interface CustomerHeroChatConfig {
   locale?: string;
   /** Predefined quick-reply options shown before the user sends a message */
   suggestedMessages?: string[];
+  /**
+   * Color scheme. `auto` follows the visitor's OS preference; `light` and
+   * `dark` force a fixed palette. Defaults to `light` when unset.
+   */
+  colorScheme?: "auto" | "light" | "dark";
+  /** Primary color used in dark mode. Only honoured when the effective
+   *  scheme resolves to dark; never auto-derived from `primaryColor`. */
+  primaryColorDark?: string;
+  /** Background color used in dark mode. Only honoured when the effective
+   *  scheme resolves to dark; never auto-derived from `backgroundColor`. */
+  backgroundColorDark?: string;
+  /** Text color used in dark mode. Only honoured when the effective scheme
+   *  resolves to dark; never auto-derived from `textColor`. */
+  textColorDark?: string;
+  /** Widget size preset. Affects launcher diameter, panel dimensions, and
+   *  base font size. Defaults to `default`. */
+  size?: "compact" | "default" | "large";
+  /** Corner radius preset for the chat panel. `soft` ~ small radius,
+   *  `rounded` ~ medium (default), `square` ~ 0. */
+  cornerStyle?: "soft" | "rounded" | "square";
+  /** Launcher (floating bubble) customization. Each field is optional. */
+  launcher?: {
+    /** Custom launcher icon URL. Replaces the default chat-bubble glyph. */
+    iconUrl?: string;
+    /** Optional CTA label shown next to the launcher (turns the bubble into
+     *  a pill). Max 60 characters. */
+    label?: string;
+    /** When true, render a small green dot on the launcher to advertise
+     *  agent availability. The host site is responsible for keeping
+     *  business-hours state in sync; the SDK only renders the dot. */
+    showOnlineDot?: boolean;
+  };
+  /** Pixel offsets so the widget can sit above sticky cookie bars or chat
+   *  CTAs. Each axis defaults to 20 px when unset. Clamped to 0–1000. */
+  offset?: { bottom?: number; side?: number };
+  /** Z-index override for sites whose overlays clip the widget. Defaults
+   *  to 99999. Capped at 2_000_000_000. */
+  zIndex?: number;
 }
 
 import type { StringOverrides, SupportedLocale } from "./i18n";
@@ -41,6 +79,21 @@ export interface ResolvedConfig {
   suggestedMessages: string[];
   /** Per-chatbot overrides for any translation key, optionally per-locale. */
   stringOverrides?: StringOverrides;
+  // Appearance pack (B1–B6). Always present after resolution; defaults
+  // applied when neither host nor server set them.
+  colorScheme: "auto" | "light" | "dark";
+  primaryColorDark?: string;
+  backgroundColorDark?: string;
+  textColorDark?: string;
+  size: "compact" | "default" | "large";
+  cornerStyle: "soft" | "rounded" | "square";
+  launcher: {
+    iconUrl?: string;
+    label?: string;
+    showOnlineDot: boolean;
+  };
+  offset: { bottom: number; side: number };
+  zIndex: number;
 }
 
 // Source citation emitted inline in bot replies as `[1]`, `[2]` markers and

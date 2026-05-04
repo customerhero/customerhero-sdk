@@ -1,5 +1,12 @@
 export { CustomerHeroChat } from "./client";
-export { DEFAULTS } from "./defaults";
+export { DEFAULTS, SIZE_PRESETS, CORNER_RADIUS } from "./defaults";
+export {
+  resolveScheme,
+  effectiveColors,
+  sizePreset,
+  panelRadius,
+  type EffectiveScheme,
+} from "./theme";
 export {
   SUPPORTED_LOCALES,
   isRtlLocale,

@@ -61,6 +61,25 @@ Pass an `identity` prop to link conversations to a user record in your system. U
 | `locale`            | `string`                          | Widget locale (`"en"`, `"es"`). Auto-detected if omitted.   |
 | `suggestedMessages` | `string[]`                        | Quick-reply options shown before the first message.         |
 
+### Appearance
+
+| Prop                     | Type                                | Description                                                                  |
+| ------------------------ | ----------------------------------- | ---------------------------------------------------------------------------- |
+| `colorScheme`            | `"auto" \| "light" \| "dark"`       | `auto` follows the visitor's OS preference. Defaults to `light`.             |
+| `primaryColorDark`       | `string`                            | Primary color in dark mode. Only honoured when the effective scheme is dark. |
+| `backgroundColorDark`    | `string`                            | Background color in dark mode.                                               |
+| `textColorDark`          | `string`                            | Text color in dark mode.                                                     |
+| `size`                   | `"compact" \| "default" \| "large"` | Launcher diameter, panel dimensions, and base font size.                     |
+| `cornerStyle`            | `"soft" \| "rounded" \| "square"`   | Panel border-radius preset.                                                  |
+| `launcher.iconUrl`       | `string`                            | Custom launcher icon URL.                                                    |
+| `launcher.label`         | `string`                            | CTA label next to the launcher (turns the bubble into a pill). Max 60 chars. |
+| `launcher.showOnlineDot` | `boolean`                           | Show a small green dot on the launcher when agents are available.            |
+| `offset.bottom`          | `number`                            | Pixel offset from the bottom edge. 0–1000. Defaults to 20.                   |
+| `offset.side`            | `number`                            | Pixel offset from the side. 0–1000. Defaults to 20.                          |
+| `zIndex`                 | `number`                            | Z-index override. Defaults to 99999.                                         |
+
+Dark colors are never auto-derived. Set them explicitly when enabling dark or auto modes.
+
 See the full reference at [customerhero.app/docs](https://customerhero.app).
 
 ## License

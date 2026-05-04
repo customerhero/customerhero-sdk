@@ -32,10 +32,30 @@ import type {
 
 type Listener = (state: ChatState) => void;
 
+function clampInt(
+  value: number | undefined,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(value)));
+}
+
 function resolveConfig(
   userConfig: CustomerHeroChatConfig,
   fetched?: Partial<ResolvedConfig>,
 ): ResolvedConfig {
+  // Server payload may carry partial launcher/offset shapes; treat both as
+  // CustomerHeroChatConfig's nested optional shape rather than the strict
+  // ResolvedConfig variants.
+  const launcherUser = userConfig.launcher ?? {};
+  const launcherFetched: NonNullable<CustomerHeroChatConfig["launcher"]> =
+    (fetched?.launcher as NonNullable<CustomerHeroChatConfig["launcher"]>) ??
+    {};
+  const offsetUser = userConfig.offset ?? {};
+  const offsetFetched: NonNullable<CustomerHeroChatConfig["offset"]> =
+    (fetched?.offset as NonNullable<CustomerHeroChatConfig["offset"]>) ?? {};
   return {
     chatbotId: userConfig.chatbotId,
     apiBase: userConfig.apiBase ?? DEFAULTS.apiBase,
@@ -60,6 +80,43 @@ function resolveConfig(
     suggestedMessages:
       userConfig.suggestedMessages ?? fetched?.suggestedMessages ?? [],
     stringOverrides: fetched?.stringOverrides,
+    // Appearance pack (B1–B6). Host overrides win; otherwise use the
+    // server-fetched value; otherwise fall back to defaults.
+    colorScheme:
+      userConfig.colorScheme ?? fetched?.colorScheme ?? DEFAULTS.colorScheme,
+    primaryColorDark: userConfig.primaryColorDark ?? fetched?.primaryColorDark,
+    backgroundColorDark:
+      userConfig.backgroundColorDark ?? fetched?.backgroundColorDark,
+    textColorDark: userConfig.textColorDark ?? fetched?.textColorDark,
+    size: userConfig.size ?? fetched?.size ?? DEFAULTS.size,
+    cornerStyle:
+      userConfig.cornerStyle ?? fetched?.cornerStyle ?? DEFAULTS.cornerStyle,
+    launcher: {
+      iconUrl: launcherUser.iconUrl ?? launcherFetched.iconUrl,
+      label: launcherUser.label ?? launcherFetched.label,
+      showOnlineDot:
+        launcherUser.showOnlineDot ?? launcherFetched.showOnlineDot ?? false,
+    },
+    offset: {
+      bottom: clampInt(
+        offsetUser.bottom ?? offsetFetched.bottom,
+        0,
+        1000,
+        DEFAULTS.offsetBottom,
+      ),
+      side: clampInt(
+        offsetUser.side ?? offsetFetched.side,
+        0,
+        1000,
+        DEFAULTS.offsetSide,
+      ),
+    },
+    zIndex: clampInt(
+      userConfig.zIndex ?? fetched?.zIndex,
+      0,
+      2_000_000_000,
+      DEFAULTS.zIndex,
+    ),
   };
 }
 

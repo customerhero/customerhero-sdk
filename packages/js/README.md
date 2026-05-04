@@ -56,6 +56,25 @@ chat.identify({
 | `locale`            | `string`                          | Widget locale (e.g. `"en"`, `"es"`). Auto-detected from browser if omitted. |
 | `suggestedMessages` | `string[]`                        | Quick-reply options shown before the first message.                         |
 
+### Appearance
+
+| Option                   | Type                                | Description                                                                       |
+| ------------------------ | ----------------------------------- | --------------------------------------------------------------------------------- |
+| `colorScheme`            | `"auto" \| "light" \| "dark"`       | `auto` follows the visitor's OS preference. Defaults to `light`.                  |
+| `primaryColorDark`       | `string`                            | Primary color used in dark mode. Only honoured when the effective scheme is dark. |
+| `backgroundColorDark`    | `string`                            | Background color used in dark mode.                                               |
+| `textColorDark`          | `string`                            | Text color used in dark mode.                                                     |
+| `size`                   | `"compact" \| "default" \| "large"` | Launcher diameter, panel dimensions, and base font size.                          |
+| `cornerStyle`            | `"soft" \| "rounded" \| "square"`   | Panel border-radius preset.                                                       |
+| `launcher.iconUrl`       | `string`                            | Custom launcher icon URL (replaces the default chat-bubble glyph).                |
+| `launcher.label`         | `string`                            | CTA label next to the launcher (turns the bubble into a pill). Max 60 chars.      |
+| `launcher.showOnlineDot` | `boolean`                           | Show a small green dot on the launcher when agents are available.                 |
+| `offset.bottom`          | `number`                            | Pixel offset from the bottom edge. 0–1000. Defaults to 20.                        |
+| `offset.side`            | `number`                            | Pixel offset from the side (mirrors `position`). 0–1000. Defaults to 20.          |
+| `zIndex`                 | `number`                            | Z-index override. Defaults to 99999. Capped at 2 000 000 000.                     |
+
+Dark colors are never auto-derived from `primaryColor`/`backgroundColor`/`textColor` — set them explicitly when enabling dark or auto modes.
+
 ## License
 
 MIT

@@ -1,7 +1,15 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-import type { PreChatField, PreChatSubmission } from "@customerhero/js";
+import {
+  effectiveColors,
+  panelRadius,
+  resolveScheme,
+  sizePreset,
+  type PreChatField,
+  type PreChatSubmission,
+} from "@customerhero/js";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
+import { usePrefersDark } from "../use-prefers-dark";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatSuggestions } from "./chat-suggestions";
@@ -340,6 +348,7 @@ export function ChatWindow() {
   const { isOpen, config, configError, t, isRtl, preChatFormVisible } =
     useChat();
   const reduced = useReducedMotion();
+  const prefersDark = usePrefersDark();
   // Track render visibility separately to allow exit animation
   const [visible, setVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -373,21 +382,33 @@ export function ChatWindow() {
       : "bottom-right"
     : config.position;
 
+  const scheme = resolveScheme(config.colorScheme, prefersDark);
+  const colors = effectiveColors(config, scheme);
+  const preset = sizePreset(config.size);
+  const radius = panelRadius(config.cornerStyle);
+
+  // The panel sits above the launcher with a small gap. Vertical offset =
+  // configured bottom + launcher height + 14 px breathing room.
+  const panelBottom = config.offset.bottom + preset.bubble + 14;
+
   const style: CSSProperties = {
     position: "fixed",
-    bottom: 90,
-    [effectivePosition === "bottom-left" ? "left" : "right"]: 20,
-    width: 380,
+    bottom: panelBottom,
+    [effectivePosition === "bottom-left" ? "left" : "right"]:
+      config.offset.side,
+    width: preset.width,
     maxWidth: "calc(100vw - 40px)",
-    height: 520,
-    maxHeight: "calc(100vh - 120px)",
-    borderRadius: 16,
+    height: preset.height,
+    maxHeight: `calc(100vh - ${panelBottom + 30}px)`,
+    borderRadius: radius,
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
     boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
-    zIndex: 99999,
-    background: config.backgroundColor,
+    zIndex: config.zIndex,
+    background: colors.background,
+    color: colors.text,
+    fontSize: preset.fontSize,
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     opacity: visible ? 1 : 0,
