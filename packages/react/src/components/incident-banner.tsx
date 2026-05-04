@@ -138,17 +138,15 @@ export function IncidentBanner() {
   // ETA renders as a subtle inline pill rather than italic text — reads as
   // metadata at a glance without competing with the title for emphasis.
   const etaStyle: CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 4,
+    display: "inline-block",
     marginTop: 6,
-    padding: "2px 6px",
+    padding: "2px 8px",
     borderRadius: 4,
     fontSize: 11,
     fontWeight: 500,
     color: palette.accent,
     background: palette.iconBg,
-    lineHeight: 1.2,
+    lineHeight: 1.4,
   };
 
   const linkStyle: CSSProperties = {
@@ -195,23 +193,7 @@ export function IncidentBanner() {
           <p style={bodyStyle}>{incidentBanner.body}</p>
         ) : null}
         {incidentBanner.eta ? (
-          <span style={etaStyle}>
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            {incidentBanner.eta}
-          </span>
+          <span style={etaStyle}>{incidentBanner.eta}</span>
         ) : null}
         {incidentBanner.link ? (
           <div>
