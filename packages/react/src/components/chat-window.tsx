@@ -344,7 +344,7 @@ function PreChatFormView() {
   );
 }
 
-export function ChatWindow() {
+export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
   const { isOpen, config, configError, t, isRtl, preChatFormVisible } =
     useChat();
   const reduced = useReducedMotion();
@@ -391,15 +391,20 @@ export function ChatWindow() {
   // configured bottom + launcher height + 14 px breathing room.
   const panelBottom = config.offset.bottom + preset.bubble + 14;
 
+  // When embedded, dimensions are constrained by the parent container
+  // instead of the viewport. Skip the calc(100vw) / calc(100vh) limits so
+  // the parent's overflow rules win cleanly.
   const style: CSSProperties = {
-    position: "fixed",
+    position: embedded ? "absolute" : "fixed",
     bottom: panelBottom,
     [effectivePosition === "bottom-left" ? "left" : "right"]:
       config.offset.side,
     width: preset.width,
-    maxWidth: "calc(100vw - 40px)",
+    maxWidth: embedded ? "calc(100% - 16px)" : "calc(100vw - 40px)",
     height: preset.height,
-    maxHeight: `calc(100vh - ${panelBottom + 30}px)`,
+    maxHeight: embedded
+      ? `calc(100% - ${panelBottom + 16}px)`
+      : `calc(100vh - ${panelBottom + 30}px)`,
     borderRadius: radius,
     overflow: "hidden",
     display: "flex",

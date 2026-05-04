@@ -46,16 +46,14 @@ function resolveConfig(
   userConfig: CustomerHeroChatConfig,
   fetched?: Partial<ResolvedConfig>,
 ): ResolvedConfig {
-  // Server payload may carry partial launcher/offset shapes; treat both as
+  // Server payload may carry a partial launcher shape; treat as
   // CustomerHeroChatConfig's nested optional shape rather than the strict
-  // ResolvedConfig variants.
+  // ResolvedConfig variant.
   const launcherUser = userConfig.launcher ?? {};
   const launcherFetched: NonNullable<CustomerHeroChatConfig["launcher"]> =
     (fetched?.launcher as NonNullable<CustomerHeroChatConfig["launcher"]>) ??
     {};
   const offsetUser = userConfig.offset ?? {};
-  const offsetFetched: NonNullable<CustomerHeroChatConfig["offset"]> =
-    (fetched?.offset as NonNullable<CustomerHeroChatConfig["offset"]>) ?? {};
   return {
     chatbotId: userConfig.chatbotId,
     apiBase: userConfig.apiBase ?? DEFAULTS.apiBase,
@@ -80,10 +78,10 @@ function resolveConfig(
     suggestedMessages:
       userConfig.suggestedMessages ?? fetched?.suggestedMessages ?? [],
     stringOverrides: fetched?.stringOverrides,
-    // Appearance pack (B1–B6). Host overrides win; otherwise use the
-    // server-fetched value; otherwise fall back to defaults.
-    colorScheme:
-      userConfig.colorScheme ?? fetched?.colorScheme ?? DEFAULTS.colorScheme,
+    // Appearance pack. Color palette + size + corner style + launcher all
+    // come from the server widget_config (with host-side override). The
+    // *runtime* knobs — colorScheme, offset, zIndex — are host-only because
+    // they depend on the page the widget is embedded in, not the chatbot.
     primaryColorDark: userConfig.primaryColorDark ?? fetched?.primaryColorDark,
     backgroundColorDark:
       userConfig.backgroundColorDark ?? fetched?.backgroundColorDark,
@@ -97,26 +95,12 @@ function resolveConfig(
       showOnlineDot:
         launcherUser.showOnlineDot ?? launcherFetched.showOnlineDot ?? false,
     },
+    colorScheme: userConfig.colorScheme ?? DEFAULTS.colorScheme,
     offset: {
-      bottom: clampInt(
-        offsetUser.bottom ?? offsetFetched.bottom,
-        0,
-        1000,
-        DEFAULTS.offsetBottom,
-      ),
-      side: clampInt(
-        offsetUser.side ?? offsetFetched.side,
-        0,
-        1000,
-        DEFAULTS.offsetSide,
-      ),
+      bottom: clampInt(offsetUser.bottom, 0, 1000, DEFAULTS.offsetBottom),
+      side: clampInt(offsetUser.side, 0, 1000, DEFAULTS.offsetSide),
     },
-    zIndex: clampInt(
-      userConfig.zIndex ?? fetched?.zIndex,
-      0,
-      2_000_000_000,
-      DEFAULTS.zIndex,
-    ),
+    zIndex: clampInt(userConfig.zIndex, 0, 2_000_000_000, DEFAULTS.zIndex),
   };
 }
 
@@ -224,7 +208,26 @@ export class CustomerHeroChat {
       pendingPrefill: null,
       incidentBanner: null,
       incidentBannerDismissed: false,
+      readOnly: false,
     };
+  }
+
+  /**
+   * Mark the constructor-resolved config as loaded and put the client into
+   * read-only preview mode without hitting the API. Used by
+   * `@customerhero/react/preview` to render the widget against a host-supplied
+   * config (the dashboard preview pane). Public API consumers should not
+   * call this — re-mount the widget instead.
+   *
+   * @internal
+   */
+  __seedForPreview(): void {
+    this.setState({
+      configLoaded: true,
+      configError: null,
+      readOnly: true,
+      isOpen: true,
+    });
   }
 
   // ── Proactive engagement state ─────────────────────────────────────
@@ -421,6 +424,10 @@ export class CustomerHeroChat {
     message: string,
     options?: { attachmentTokens?: string[] },
   ): Promise<void> {
+    // Read-only / preview mode: never hit the API. Used by the dashboard
+    // preview pane so that an operator typing in the previewed input doesn't
+    // create real conversations against their own chatbot.
+    if (this.state.readOnly) return;
     const trimmed = message.trim();
     const attachmentTokens = options?.attachmentTokens ?? [];
     // Attachments-only sends are not supported (the server requires text).

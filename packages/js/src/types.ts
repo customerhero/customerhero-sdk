@@ -367,4 +367,8 @@ export interface ChatState {
   /** True when the visitor has dismissed the active banner this session.
    *  Reset whenever a new banner (different content) lands. */
   incidentBannerDismissed: boolean;
+  /** When true, the chat input is disabled and `sendMessage` is a no-op.
+   *  Used by the dashboard preview (and any other host that wants a
+   *  visual-only render). Public API consumers should not set this. */
+  readOnly: boolean;
 }

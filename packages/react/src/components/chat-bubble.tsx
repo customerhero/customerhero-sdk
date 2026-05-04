@@ -4,7 +4,7 @@ import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 import { usePrefersDark } from "../use-prefers-dark";
 
-export function ChatBubble() {
+export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
   const { toggle, config, t, isRtl } = useChat();
   const reduced = useReducedMotion();
   const prefersDark = usePrefersDark();
@@ -37,7 +37,7 @@ export function ChatBubble() {
   const borderRadius = hasLabel ? preset.bubble / 2 : "50%";
 
   const style: CSSProperties = {
-    position: "fixed",
+    position: embedded ? "absolute" : "fixed",
     bottom: config.offset.bottom,
     [effectivePosition === "bottom-left" ? "left" : "right"]:
       config.offset.side,

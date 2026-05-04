@@ -14,10 +14,19 @@ const CustomerHeroContext = createContext<CustomerHeroChat | null>(null);
 
 export interface CustomerHeroProviderProps extends CustomerHeroChatConfig {
   children: ReactNode;
+  /**
+   * When true, the provider does NOT call `client.fetchConfig()` on mount.
+   * Used by the preview subpath to render the widget against a host-supplied
+   * config. Public consumers should leave this unset.
+   *
+   * @internal
+   */
+  disableAutoFetch?: boolean;
 }
 
 export function CustomerHeroProvider({
   children,
+  disableAutoFetch,
   ...config
 }: CustomerHeroProviderProps) {
   const clientRef = useRef<CustomerHeroChat | null>(null);
@@ -27,8 +36,9 @@ export function CustomerHeroProvider({
   }
 
   useEffect(() => {
+    if (disableAutoFetch) return;
     clientRef.current?.fetchConfig();
-  }, []);
+  }, [disableAutoFetch]);
 
   return (
     <CustomerHeroContext.Provider value={clientRef.current}>

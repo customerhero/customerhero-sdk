@@ -61,6 +61,7 @@ export function ChatInput() {
     sendMessage,
     uploadAttachment,
     isLoading,
+    readOnly,
     config,
     t,
     consumePendingPrefill,
@@ -442,7 +443,8 @@ export function ChatInput() {
     fontSize: 12,
   };
 
-  const attachDisabled = attachments.length >= MAX_ATTACHMENTS || isLoading;
+  const attachDisabled =
+    attachments.length >= MAX_ATTACHMENTS || isLoading || readOnly;
 
   return (
     <div
@@ -548,11 +550,11 @@ export function ChatInput() {
           onPaste={handlePaste}
           placeholder={config.placeholderText}
           style={inputStyle}
-          disabled={isLoading}
+          disabled={isLoading || readOnly}
         />
         <button
           onClick={handleSend}
-          disabled={isLoading || !value.trim()}
+          disabled={isLoading || readOnly || !value.trim()}
           style={sendButtonStyle}
           aria-label={t("send_message")}
           onMouseEnter={(e) => {
