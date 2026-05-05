@@ -62,14 +62,18 @@ export function ChatHeader() {
     padding: 4,
   };
 
+  const isDark = theme.scheme === "dark";
   const menuStyle: CSSProperties = {
     position: "absolute",
     top: "100%",
     right: 0,
     marginTop: 4,
-    background: "white",
+    background: theme.background,
+    border: `1px solid ${theme.divider}`,
     borderRadius: 8,
-    boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+    boxShadow: isDark
+      ? "0 4px 16px rgba(0,0,0,0.5)"
+      : "0 4px 16px rgba(0,0,0,0.15)",
     minWidth: 180,
     overflow: "hidden",
     zIndex: 10,
@@ -87,7 +91,7 @@ export function ChatHeader() {
     background: "none",
     cursor: "pointer",
     fontSize: 13,
-    color: "#333",
+    color: theme.text,
     textAlign: "left",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -163,7 +167,7 @@ export function ChatHeader() {
                 reset();
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#f5f5f5";
+                e.currentTarget.style.background = theme.bubbleBackground;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "none";

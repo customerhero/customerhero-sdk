@@ -4,7 +4,10 @@
 // `@customerhero/react/preview`.
 
 import { useEffect, useMemo, type CSSProperties } from "react";
-import type { CustomerHeroChatConfig } from "@customerhero/js";
+import type {
+  CustomerHeroChatConfig,
+  IncidentBanner,
+} from "@customerhero/js";
 import { CustomerHeroProvider, useCustomerHeroClient } from "./context";
 import { ChatBubble } from "./components/chat-bubble";
 import { ChatWindow } from "./components/chat-window";
@@ -18,14 +21,26 @@ export interface PreviewWidgetProps extends CustomerHeroChatConfig {
   style?: CSSProperties;
   /** Optional className on the outer wrapper. */
   className?: string;
+  /**
+   * Render the chatbot's incident banner inside the preview chat window.
+   * `null` (or omitted) hides the banner. The banner is sanitized client-side
+   * so dashboard-side typos in fields like `link.url` don't crash the preview.
+   */
+  banner?: IncidentBanner | null;
 }
 
-function PreviewBootstrap({ config }: { config: CustomerHeroChatConfig }) {
+function PreviewBootstrap({
+  config,
+  banner,
+}: {
+  config: CustomerHeroChatConfig;
+  banner: IncidentBanner | null | undefined;
+}) {
   const client = useCustomerHeroClient();
 
   // Seed once on mount with the initial config (animation fires here).
   useEffect(() => {
-    client.__seedForPreview(config);
+    client.__seedForPreview(config, { banner: banner ?? null });
     // Intentional: only on mount. Subsequent config changes flow through the
     // effect below, which updates the resolved config in place WITHOUT
     // toggling isOpen — so the open animation does not re-fire on every
@@ -33,13 +48,15 @@ function PreviewBootstrap({ config }: { config: CustomerHeroChatConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client]);
 
-  // Re-resolve whenever any config field changes. Stringify on the dep so
-  // nested objects (launcher, offset) are deep-compared cheaply.
+  // Re-resolve whenever any config or banner field changes. Stringify on the
+  // dep so nested objects (launcher, offset, banner.link) are deep-compared
+  // cheaply.
   const configKey = JSON.stringify(config);
+  const bannerKey = JSON.stringify(banner ?? null);
   useEffect(() => {
-    client.__seedForPreview(config);
+    client.__seedForPreview(config, { banner: banner ?? null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, configKey]);
+  }, [client, configKey, bannerKey]);
 
   return null;
 }
@@ -61,6 +78,7 @@ const wrapperStyleBase: CSSProperties = {
 export function PreviewWidget({
   style,
   className,
+  banner,
   ...config
 }: PreviewWidgetProps) {
   // Snapshot the initial config so the provider's first mount uses it. Later
@@ -76,7 +94,7 @@ export function PreviewWidget({
       data-customerhero-preview="true"
     >
       <CustomerHeroProvider disableAutoFetch {...initialConfig}>
-        <PreviewBootstrap config={config} />
+        <PreviewBootstrap config={config} banner={banner} />
         <ChatBubble embedded />
         <ChatWindow embedded />
       </CustomerHeroProvider>

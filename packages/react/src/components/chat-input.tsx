@@ -392,10 +392,12 @@ export function ChatInput() {
     position: "absolute",
     bottom: "calc(100% + 4px)",
     left: 0,
-    background: "white",
-    border: "1px solid #e0e0e0",
+    background: theme.background,
+    border: `1px solid ${theme.divider}`,
     borderRadius: 8,
-    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+    boxShadow: isDark
+      ? "0 4px 16px rgba(0,0,0,0.5)"
+      : "0 4px 16px rgba(0,0,0,0.12)",
     padding: 4,
     minWidth: 180,
     zIndex: 10,
@@ -413,7 +415,7 @@ export function ChatInput() {
     borderRadius: 4,
     cursor: "pointer",
     fontSize: 14,
-    color: "#333",
+    color: theme.text,
     textAlign: "left",
     whiteSpace: "nowrap",
     fontFamily:
@@ -506,7 +508,7 @@ export function ChatInput() {
                   onClick={handlePickFile}
                   style={menuItemStyle}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#f5f5f5";
+                    e.currentTarget.style.background = theme.bubbleBackground;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
@@ -522,7 +524,7 @@ export function ChatInput() {
                     onClick={handleCapture}
                     style={menuItemStyle}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f5f5f5";
+                      e.currentTarget.style.background = theme.bubbleBackground;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = "transparent";

@@ -230,7 +230,10 @@ export class CustomerHeroChat {
    *
    * @internal
    */
-  __seedForPreview(config?: CustomerHeroChatConfig): void {
+  __seedForPreview(
+    config?: CustomerHeroChatConfig,
+    extras?: { banner?: IncidentBanner | null },
+  ): void {
     const resolved = config ? resolveConfig(config) : this.state.config;
     if (config) this.userConfig = config;
     // In preview mode there are never real conversations, so the message
@@ -239,6 +242,10 @@ export class CustomerHeroChat {
     const seededMessages: ChatMessage[] = resolved.welcomeMessage
       ? [{ role: "bot" as const, content: resolved.welcomeMessage }]
       : [];
+    const sanitizedBanner =
+      extras && "banner" in extras
+        ? sanitizeIncidentBanner(extras.banner ?? null)
+        : this.state.incidentBanner;
     this.setState({
       config: resolved,
       configLoaded: true,
@@ -246,6 +253,10 @@ export class CustomerHeroChat {
       readOnly: true,
       isOpen: true,
       messages: seededMessages,
+      incidentBanner: sanitizedBanner,
+      // Reset the dismissed flag so toggling the banner on in the dashboard
+      // re-renders it after a previous preview-side dismiss.
+      incidentBannerDismissed: false,
     });
   }
 
