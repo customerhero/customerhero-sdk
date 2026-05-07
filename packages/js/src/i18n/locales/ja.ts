@@ -29,4 +29,7 @@ export const ja: Translations = {
   incident_dismiss: "閉じる",
   incident_default_link_label: "詳細を見る",
   attachment_unsupported_type: "サポートされていないファイル形式",
+  attachment_open: "添付ファイルを開く",
+  attachment_image_alt: "画像の添付ファイル",
+  attachment_location: "共有された位置情報",
 };

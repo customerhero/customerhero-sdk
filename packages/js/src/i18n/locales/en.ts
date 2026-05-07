@@ -28,4 +28,7 @@ export const en: Translations = {
   incident_dismiss: "Dismiss",
   incident_default_link_label: "Learn more",
   attachment_unsupported_type: "Unsupported file type",
+  attachment_open: "Open attachment",
+  attachment_image_alt: "Image attachment",
+  attachment_location: "Shared location",
 };

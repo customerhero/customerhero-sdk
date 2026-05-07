@@ -30,4 +30,7 @@ export const de: Translations = {
   incident_dismiss: "Schließen",
   incident_default_link_label: "Mehr erfahren",
   attachment_unsupported_type: "Dateityp nicht unterstützt",
+  attachment_open: "Anhang öffnen",
+  attachment_image_alt: "Bildanhang",
+  attachment_location: "Geteilter Standort",
 };

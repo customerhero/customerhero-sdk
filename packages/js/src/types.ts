@@ -141,6 +141,28 @@ export type MessageBlock = QuickRepliesBlock | ActionConfirmationBlock;
 // churning the public type contract.
 export type MessageStatus = "sending" | "sent" | "failed";
 
+/**
+ * Attachment hung off a historical message. The widget only ever uploads
+ * `image` and `document` kinds, but inbox agents can attach `audio` /
+ * `video` / `location` from the dashboard, and the history endpoint returns
+ * everything the conversation has accumulated.
+ */
+export interface MessageAttachment {
+  id: string;
+  kind: "image" | "document" | "audio" | "video" | "location";
+  mimeType: string | null;
+  filename: string | null;
+  sizeBytes: number | null;
+  /** Public R2 URL. Null for `location` attachments (use `location` instead). */
+  url: string | null;
+  /** Geo payload for `location` attachments. */
+  location: {
+    label?: string | null;
+    latitude: number;
+    longitude: number;
+  } | null;
+}
+
 export interface ChatMessage {
   /** Message ID from the API (only present for bot messages) */
   id?: string;
@@ -155,6 +177,11 @@ export interface ChatMessage {
    * tappable chips under the most recent bot message only.
    */
   suggestions?: string[];
+  /**
+   * Files / screenshots / locations attached to this message. Populated from
+   * the history endpoint on conversation reload.
+   */
+  attachments?: MessageAttachment[];
   /** True while this message is still receiving streaming tokens. */
   streaming?: boolean;
   /**

@@ -29,4 +29,7 @@ export const fr: Translations = {
   incident_dismiss: "Ignorer",
   incident_default_link_label: "En savoir plus",
   attachment_unsupported_type: "Type de fichier non pris en charge",
+  attachment_open: "Ouvrir la pièce jointe",
+  attachment_image_alt: "Pièce jointe (image)",
+  attachment_location: "Position partagée",
 };

@@ -29,4 +29,7 @@ export const ko: Translations = {
   incident_dismiss: "닫기",
   incident_default_link_label: "자세히 알아보기",
   attachment_unsupported_type: "지원되지 않는 파일 형식",
+  attachment_open: "첨부 파일 열기",
+  attachment_image_alt: "이미지 첨부 파일",
+  attachment_location: "공유된 위치",
 };

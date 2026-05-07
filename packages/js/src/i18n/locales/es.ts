@@ -28,4 +28,7 @@ export const es: Translations = {
   incident_dismiss: "Descartar",
   incident_default_link_label: "Más información",
   attachment_unsupported_type: "Tipo de archivo no admitido",
+  attachment_open: "Abrir adjunto",
+  attachment_image_alt: "Imagen adjunta",
+  attachment_location: "Ubicación compartida",
 };

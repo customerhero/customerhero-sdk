@@ -29,4 +29,7 @@ export const ptPT: Translations = {
   incident_dismiss: "Dispensar",
   incident_default_link_label: "Saiba mais",
   attachment_unsupported_type: "Tipo de ficheiro não suportado",
+  attachment_open: "Abrir anexo",
+  attachment_image_alt: "Imagem anexa",
+  attachment_location: "Localização partilhada",
 };

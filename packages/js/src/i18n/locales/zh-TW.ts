@@ -29,4 +29,7 @@ export const zhTW: Translations = {
   incident_dismiss: "關閉",
   incident_default_link_label: "瞭解更多",
   attachment_unsupported_type: "不支援的檔案類型",
+  attachment_open: "開啟附件",
+  attachment_image_alt: "圖片附件",
+  attachment_location: "共享的位置",
 };

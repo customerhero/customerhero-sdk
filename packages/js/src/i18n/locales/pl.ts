@@ -29,4 +29,7 @@ export const pl: Translations = {
   incident_dismiss: "Zamknij",
   incident_default_link_label: "Dowiedz się więcej",
   attachment_unsupported_type: "Nieobsługiwany typ pliku",
+  attachment_open: "Otwórz załącznik",
+  attachment_image_alt: "Załącznik obrazu",
+  attachment_location: "Udostępniona lokalizacja",
 };

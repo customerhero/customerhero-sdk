@@ -20,6 +20,7 @@ import type {
   MessageRating,
   MessageSource,
   MessageBlock,
+  MessageAttachment,
   IdentifyPayload,
   IdentityData,
   TriggerDefinition,
@@ -416,6 +417,7 @@ export class CustomerHeroChat {
           sources?: MessageSource[];
           blocks?: MessageBlock[];
           suggestions?: string[];
+          attachments?: MessageAttachment[];
         }>;
       };
       const raw = data.messages ?? [];
@@ -426,6 +428,7 @@ export class CustomerHeroChat {
         ...(m.sources ? { sources: m.sources } : {}),
         ...(m.blocks ? { blocks: m.blocks } : {}),
         ...(m.suggestions ? { suggestions: m.suggestions } : {}),
+        ...(m.attachments?.length ? { attachments: m.attachments } : {}),
       }));
 
       // Only keep follow-up suggestions on the most recent bot message — older

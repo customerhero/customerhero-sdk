@@ -29,4 +29,7 @@ export const nl: Translations = {
   incident_dismiss: "Sluiten",
   incident_default_link_label: "Meer informatie",
   attachment_unsupported_type: "Bestandstype niet ondersteund",
+  attachment_open: "Bijlage openen",
+  attachment_image_alt: "Afbeeldingsbijlage",
+  attachment_location: "Gedeelde locatie",
 };

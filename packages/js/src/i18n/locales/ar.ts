@@ -29,4 +29,7 @@ export const ar: Translations = {
   incident_dismiss: "إغلاق",
   incident_default_link_label: "اعرف المزيد",
   attachment_unsupported_type: "نوع الملف غير مدعوم",
+  attachment_open: "فتح المرفق",
+  attachment_image_alt: "صورة مرفقة",
+  attachment_location: "موقع مشترك",
 };

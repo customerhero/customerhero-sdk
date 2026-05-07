@@ -29,4 +29,7 @@ export const zhCN: Translations = {
   incident_dismiss: "关闭",
   incident_default_link_label: "了解更多",
   attachment_unsupported_type: "不支持的文件类型",
+  attachment_open: "打开附件",
+  attachment_image_alt: "图片附件",
+  attachment_location: "共享的位置",
 };

@@ -29,4 +29,7 @@ export const tr: Translations = {
   incident_dismiss: "Kapat",
   incident_default_link_label: "Daha fazla bilgi",
   attachment_unsupported_type: "Desteklenmeyen dosya türü",
+  attachment_open: "Eki aç",
+  attachment_image_alt: "Resim eki",
+  attachment_location: "Paylaşılan konum",
 };

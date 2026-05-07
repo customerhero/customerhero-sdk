@@ -35,6 +35,7 @@ export type {
   MessageRating,
   MessageSource,
   MessageBlock,
+  MessageAttachment,
   MessageStatus,
   QuickRepliesBlock,
   ActionConfirmationBlock,

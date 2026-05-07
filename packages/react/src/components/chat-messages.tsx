@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type {
   ChatMessage,
+  MessageAttachment,
   MessageBlock,
   MessageRating,
   TranslateFn,
@@ -344,6 +345,227 @@ function StreamingCursor({ reduced }: { reduced: boolean }) {
   );
 }
 
+function formatBytes(n: number | null): string | null {
+  if (n == null || n <= 0) return null;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentList({
+  attachments,
+  isUser,
+  primaryColor,
+  t,
+}: {
+  attachments: MessageAttachment[];
+  isUser: boolean;
+  primaryColor: string;
+  t: TranslateFn;
+}) {
+  const containerStyle: CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    marginTop: 6,
+    alignItems: isUser ? "flex-end" : "flex-start",
+  };
+  return (
+    <div style={containerStyle}>
+      {attachments.map((a) => (
+        <AttachmentTile
+          key={a.id}
+          attachment={a}
+          isUser={isUser}
+          primaryColor={primaryColor}
+          t={t}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AttachmentTile({
+  attachment,
+  isUser,
+  primaryColor,
+  t,
+}: {
+  attachment: MessageAttachment;
+  isUser: boolean;
+  primaryColor: string;
+  t: TranslateFn;
+}) {
+  const tileBg = isUser ? `${primaryColor}11` : "#f3f4f6";
+  const tileBorder = isUser ? `${primaryColor}33` : "#e5e7eb";
+
+  if (attachment.kind === "image" && attachment.url) {
+    return (
+      <a
+        href={attachment.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ display: "inline-block", maxWidth: 220, lineHeight: 0 }}
+        aria-label={attachment.filename ?? t("attachment_image_alt")}
+      >
+        <img
+          src={attachment.url}
+          alt={attachment.filename ?? t("attachment_image_alt")}
+          style={{
+            display: "block",
+            maxWidth: 220,
+            maxHeight: 220,
+            width: "auto",
+            height: "auto",
+            borderRadius: 12,
+            border: `1px solid ${tileBorder}`,
+            objectFit: "cover",
+          }}
+        />
+      </a>
+    );
+  }
+
+  if (attachment.kind === "location" && attachment.location) {
+    const { latitude, longitude, label } = attachment.location;
+    const href = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude}`;
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={tileLinkStyle(tileBg, tileBorder)}
+      >
+        <PinIcon />
+        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <span style={tileTitleStyle()}>
+            {label || t("attachment_location")}
+          </span>
+          <span style={tileSubStyle()}>
+            {latitude.toFixed(4)}, {longitude.toFixed(4)}
+          </span>
+        </div>
+      </a>
+    );
+  }
+
+  // Document / audio / video → generic download tile.
+  if (!attachment.url) return null;
+  const sub = [attachment.mimeType, formatBytes(attachment.sizeBytes)]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <a
+      href={attachment.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={t("attachment_open")}
+      style={tileLinkStyle(tileBg, tileBorder)}
+    >
+      <FileIcon kind={attachment.kind} />
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span style={tileTitleStyle()}>
+          {attachment.filename ?? t("attachment_open")}
+        </span>
+        {sub && <span style={tileSubStyle()}>{sub}</span>}
+      </div>
+    </a>
+  );
+}
+
+function tileLinkStyle(bg: string, border: string): CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "8px 12px",
+    background: bg,
+    border: `1px solid ${border}`,
+    borderRadius: 12,
+    textDecoration: "none",
+    color: "inherit",
+    maxWidth: 260,
+  };
+}
+
+function tileTitleStyle(): CSSProperties {
+  return {
+    fontSize: 13,
+    fontWeight: 500,
+    color: "#1f2937",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: 200,
+  };
+}
+
+function tileSubStyle(): CSSProperties {
+  return {
+    fontSize: 11,
+    color: "#6b7280",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    maxWidth: 200,
+  };
+}
+
+function FileIcon({ kind }: { kind: MessageAttachment["kind"] }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#4b5563"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ flexShrink: 0 }}
+    >
+      {kind === "audio" ? (
+        <>
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </>
+      ) : kind === "video" ? (
+        <>
+          <rect x="2" y="6" width="14" height="12" rx="2" />
+          <path d="m22 8-6 4 6 4z" />
+        </>
+      ) : (
+        <>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#4b5563"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ flexShrink: 0 }}
+    >
+      <path d="M20 10c0 7-8 13-8 13s-8-6-8-13a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
 function Message({
   message,
   config,
@@ -392,26 +614,39 @@ function Message({
 
   const linkColor = isUser ? "#ffffff" : config.primaryColor;
 
+  const hasContent = message.content.trim().length > 0;
+  const hasAttachments = !!message.attachments?.length;
+
   return (
     <AnimatedMessage isUser={isUser} animate={animate} reduced={reduced}>
-      <div
-        style={bubbleStyle}
-        data-streaming-bubble={
-          !isUser && message.streaming ? "true" : undefined
-        }
-      >
-        {isUser ? (
-          message.content
-        ) : (
-          <>
-            {renderMarkdown(message.content, {
-              sources: message.sources,
-              linkColor,
-            })}
-            {message.streaming && <StreamingCursor reduced={reduced} />}
-          </>
-        )}
-      </div>
+      {hasContent && (
+        <div
+          style={bubbleStyle}
+          data-streaming-bubble={
+            !isUser && message.streaming ? "true" : undefined
+          }
+        >
+          {isUser ? (
+            message.content
+          ) : (
+            <>
+              {renderMarkdown(message.content, {
+                sources: message.sources,
+                linkColor,
+              })}
+              {message.streaming && <StreamingCursor reduced={reduced} />}
+            </>
+          )}
+        </div>
+      )}
+      {hasAttachments && (
+        <AttachmentList
+          attachments={message.attachments!}
+          isUser={isUser}
+          primaryColor={config.primaryColor}
+          t={t}
+        />
+      )}
       {isUser && message.status && (
         <MessageStatusPill status={message.status} t={t} />
       )}

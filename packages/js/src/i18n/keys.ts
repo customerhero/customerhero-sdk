@@ -29,6 +29,9 @@ export type TranslationKey =
   | "attach_photo"
   | "drop_files_here"
   | "attachment_unsupported_type"
+  | "attachment_open"
+  | "attachment_image_alt"
+  | "attachment_location"
   | "incident_dismiss"
   | "incident_default_link_label";
 

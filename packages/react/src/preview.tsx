@@ -4,10 +4,7 @@
 // `@customerhero/react/preview`.
 
 import { useEffect, useMemo, type CSSProperties } from "react";
-import type {
-  CustomerHeroChatConfig,
-  IncidentBanner,
-} from "@customerhero/js";
+import type { CustomerHeroChatConfig, IncidentBanner } from "@customerhero/js";
 import { CustomerHeroProvider, useCustomerHeroClient } from "./context";
 import { ChatBubble } from "./components/chat-bubble";
 import { ChatWindow } from "./components/chat-window";
