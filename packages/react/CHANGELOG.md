@@ -1,5 +1,11 @@
 # @customerhero/react
 
+## 2.4.0
+
+### Minor Changes
+
+- 92ab801: Surface attachments in chat history. `loadHistory()` now hydrates the `attachments[]` field on each `ChatMessage` (new exported `MessageAttachment` type), and the React `<ChatMessages>` component renders them under the bubble: images inline as thumbnails, documents/audio/video as a download tile, and shared locations as a pin tile linking to OpenStreetMap. Returning visitors no longer lose their previously-uploaded screenshots and PDFs.
+
 ## 2.3.0
 
 ### Minor Changes

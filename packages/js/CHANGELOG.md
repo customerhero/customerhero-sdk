@@ -1,5 +1,28 @@
 # @customerhero/js
 
+## 2.4.0
+
+### Minor Changes
+
+- 92ab801: Surface attachments in chat history. `loadHistory()` now hydrates the `attachments[]` field on each `ChatMessage` (new exported `MessageAttachment` type), and the React `<ChatMessages>` component renders them under the bubble: images inline as thumbnails, documents/audio/video as a download tile, and shared locations as a pin tile linking to OpenStreetMap. Returning visitors no longer lose their previously-uploaded screenshots and PDFs.
+
+### Patch Changes
+
+- Resolve the action-confirmation decision endpoint from the block's
+  `approveHref` / `cancelHref` instead of hardcoding the tool-call path, so
+  the same confirmation UI backs both LLM tool-call decisions and workflow
+  approval nodes. Falls back to the legacy `/tool-calls/:id/decision` path
+  when the href fields are absent.
+- 72b0c60: Send the transcript-read capability token (C3) when loading conversation
+  history. The widget now stores the `readToken` issued with each chat
+  reply (JSON `readToken` field and the SSE `read-token` event) next to
+  the conversation id, and presents it as the `?t=` query parameter on
+  `GET /api/chat/:chatbotId/messages/:conversationId`. A `403` (invalid or
+  expired token) clears the stored conversation and starts fresh. No
+  public API change — the token is handled internally. This lets the
+  server stop returning a full transcript to anyone who merely knows the
+  conversation id once the token becomes required server-side.
+
 ## 2.3.0
 
 ### Minor Changes
