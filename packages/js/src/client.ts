@@ -735,6 +735,18 @@ export class CustomerHeroChat {
       return;
     }
 
+    // Resolve the decision endpoint from the block itself. The API ships
+    // `approveHref` / `cancelHref` per card so the same confirmation UI can
+    // back either an LLM tool call (`/tool-calls/:id/decision`) or a workflow
+    // approval node (`/workflow-approvals/:id/decision`). Honoring the href
+    // keeps the SDK forward-compatible with future decision routes; we fall
+    // back to the legacy tool-call path for older API responses that predate
+    // the href fields.
+    const decisionBlock = this.state.messages[targetIndex].blocks?.find(
+      (b): b is Extract<MessageBlock, { type: "action_confirmation" }> =>
+        b.type === "action_confirmation" && b.pendingToolCallId === pendingId,
+    );
+
     // Optimistically strip the card and start streaming on that bubble.
     const messages = this.state.messages.slice();
     const original = messages[targetIndex];
@@ -745,7 +757,13 @@ export class CustomerHeroChat {
     this.setState({ messages, error: null });
 
     const { chatbotId, apiBase } = this.state.config;
-    const url = `${apiBase}/api/chat/${chatbotId}/tool-calls/${pendingId}/decision`;
+    const href =
+      decision === "approve"
+        ? decisionBlock?.approveHref
+        : decisionBlock?.cancelHref;
+    const url = href
+      ? `${apiBase}${href}`
+      : `${apiBase}/api/chat/${chatbotId}/tool-calls/${pendingId}/decision`;
 
     try {
       const response = await fetch(url, {

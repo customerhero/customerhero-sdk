@@ -165,6 +165,64 @@ describe("action confirmation in CustomerHeroChat", () => {
     expect(captured?.identity?.userId).toBe("u_1");
   });
 
+  it("routes workflow approval decisions to the workflow-approvals endpoint", async () => {
+    const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
+
+    const wfBlock: ActionConfirmationBlock = {
+      type: "action_confirmation",
+      pendingToolCallId: "wfa_1",
+      actionName: "workflow_approval",
+      title: "Approve the refund?",
+      summary: "Refund $42 to the customer.",
+      approveHref:
+        "/api/chat/bot_x/workflow-approvals/wfa_1/decision?decision=approve",
+      cancelHref:
+        "/api/chat/bot_x/workflow-approvals/wfa_1/decision?decision=cancel",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).endsWith("/api/chat/bot_x")) {
+          return sseStream([
+            {
+              event: "metadata",
+              data: JSON.stringify({ conversationId: "c_1" }),
+            },
+            {
+              event: "token",
+              data: JSON.stringify({ text: "Let me check. " }),
+            },
+            { event: "block", data: JSON.stringify({ block: wfBlock }) },
+            { event: "done", data: "{}" },
+          ]);
+        }
+        throw new Error(`Unexpected URL: ${String(input)}`);
+      }),
+    );
+    await chat.sendMessage("hello");
+
+    const decisionFetch = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        expect(url).toContain("/workflow-approvals/wfa_1/decision");
+        expect(url).not.toContain("/tool-calls/");
+        const body = JSON.parse(String(init?.body ?? "{}"));
+        expect(body.decision).toBe("approve");
+        return sseStream([
+          { event: "token", data: JSON.stringify({ text: "Refund issued." }) },
+          { event: "done", data: "{}" },
+        ]);
+      },
+    );
+    vi.stubGlobal("fetch", decisionFetch);
+
+    await chat.approveAction("wfa_1");
+
+    expect(decisionFetch).toHaveBeenCalledOnce();
+    const bot = chat.getState().messages.find((m) => m.role === "bot")!;
+    expect(bot.content).toContain("Refund issued.");
+  });
+
   it("surfaces already_resolved errors and re-fetches history", async () => {
     const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
     seedBubbleWithBlock(chat);
