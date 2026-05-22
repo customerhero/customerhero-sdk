@@ -399,13 +399,25 @@ export class CustomerHeroChat {
     const { conversationId } = this.state;
     if (!conversationId) return;
 
+    // C3: present the transcript-read capability token (issued with each
+    // chat reply) as the `t` query param so the server authorizes the read.
+    // Use the query param, NOT a header — the messages endpoint's CORS
+    // preflight only allows Content-Type/Accept, so a custom request header
+    // would be blocked cross-origin.
+    const readToken = this.storage?.getItem(`ch_conv_token_${chatbotId}`);
+    const messagesUrl = `${apiBase}/api/chat/${chatbotId}/messages/${conversationId}`;
+
     try {
       const response = await fetch(
-        `${apiBase}/api/chat/${chatbotId}/messages/${conversationId}`,
+        readToken
+          ? `${messagesUrl}?t=${encodeURIComponent(readToken)}`
+          : messagesUrl,
       );
       if (!response.ok) {
-        // Conversation may have been deleted — clear it and start fresh
+        // Conversation was deleted, or the read token is invalid/expired
+        // (403). Either way, clear it and start fresh.
         this.storage?.removeItem(`ch_conv_${chatbotId}`);
+        this.storage?.removeItem(`ch_conv_token_${chatbotId}`);
         this.setState({ conversationId: null });
         return;
       }
@@ -583,6 +595,19 @@ export class CustomerHeroChat {
             }
             if (meta?.messageId) {
               messageId = meta.messageId;
+            }
+            break;
+          }
+          case "read-token": {
+            // C3: store the transcript-read capability token next to the
+            // conversationId so a later reload can authorize loading
+            // history. Re-issued on every reply, so always overwrite.
+            const tok = safeParse<{ readToken?: string }>(evt.data);
+            if (tok?.readToken) {
+              this.storage?.setItem(
+                `ch_conv_token_${chatbotId}`,
+                tok.readToken,
+              );
             }
             break;
           }
@@ -800,6 +825,18 @@ export class CustomerHeroChat {
             }
             break;
           }
+          case "read-token": {
+            // C3: persist the transcript-read token (see the metadata
+            // handler in sendMessage for details).
+            const tok = safeParse<{ readToken?: string }>(evt.data);
+            if (tok?.readToken) {
+              this.storage?.setItem(
+                `ch_conv_token_${chatbotId}`,
+                tok.readToken,
+              );
+            }
+            break;
+          }
           case "token": {
             const tok = safeParse<{ text?: string }>(evt.data);
             const text = tok?.text ?? "";
@@ -926,6 +963,7 @@ export class CustomerHeroChat {
   reset(): void {
     const { chatbotId, welcomeMessage } = this.state.config;
     this.storage?.removeItem(`ch_conv_${chatbotId}`);
+    this.storage?.removeItem(`ch_conv_token_${chatbotId}`);
     this.setState({
       messages: welcomeMessage
         ? [{ role: "bot", content: welcomeMessage }]
@@ -1135,6 +1173,7 @@ export class CustomerHeroChat {
     // When identity changes, clear old conversation to start fresh
     const { chatbotId, welcomeMessage } = this.state.config;
     this.storage?.removeItem(`ch_conv_${chatbotId}`);
+    this.storage?.removeItem(`ch_conv_token_${chatbotId}`);
     this.setState({
       messages: welcomeMessage
         ? [{ role: "bot", content: welcomeMessage }]
