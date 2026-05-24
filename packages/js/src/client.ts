@@ -786,9 +786,19 @@ export class CustomerHeroChat {
       decision === "approve"
         ? decisionBlock?.approveHref
         : decisionBlock?.cancelHref;
-    const url = href
+    const baseUrl = href
       ? `${apiBase}${href}`
       : `${apiBase}/api/chat/${chatbotId}/tool-calls/${pendingId}/decision`;
+
+    // Approving a decision executes a configured action, so the endpoint now
+    // REQUIRES the transcript-read capability token (the same one issued on the
+    // chat POST and used for loading history). Pass it as a query param, NOT a
+    // header — the decision endpoint's CORS preflight only allows
+    // Content-Type/Accept, so a custom header would be blocked cross-origin.
+    const readToken = this.storage?.getItem(`ch_conv_token_${chatbotId}`);
+    const url = readToken
+      ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}t=${encodeURIComponent(readToken)}`
+      : baseUrl;
 
     try {
       const response = await fetch(url, {

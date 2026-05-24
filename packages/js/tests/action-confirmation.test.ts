@@ -223,6 +223,54 @@ describe("action confirmation in CustomerHeroChat", () => {
     expect(bot.content).toContain("Refund issued.");
   });
 
+  it("sends the transcript-read token as ?t= on the decision request", async () => {
+    const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
+    // Seed the bubble AND issue a read-token over the chat POST SSE so the
+    // client stores it (same channel the real API uses).
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).endsWith("/api/chat/bot_x")) {
+          return sseStream([
+            {
+              event: "metadata",
+              data: JSON.stringify({ conversationId: "c_1" }),
+            },
+            {
+              event: "read-token",
+              data: JSON.stringify({ readToken: "1700000000.deadbeef" }),
+            },
+            {
+              event: "token",
+              data: JSON.stringify({ text: "I can do that. " }),
+            },
+            { event: "block", data: JSON.stringify({ block }) },
+            { event: "done", data: "{}" },
+          ]);
+        }
+        throw new Error(`Unexpected URL: ${String(input)}`);
+      }),
+    );
+    await chat.sendMessage("hello");
+
+    let decisionUrl = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        decisionUrl = String(input);
+        return sseStream([{ event: "done", data: "{}" }]);
+      }),
+    );
+
+    await chat.approveAction("ptc_1");
+
+    expect(decisionUrl).toContain("/tool-calls/ptc_1/decision");
+    // approveHref already carries ?decision=approve, so the token appends with &.
+    expect(decisionUrl).toContain(
+      `t=${encodeURIComponent("1700000000.deadbeef")}`,
+    );
+  });
+
   it("surfaces already_resolved errors and re-fetches history", async () => {
     const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
     seedBubbleWithBlock(chat);
