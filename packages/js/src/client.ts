@@ -934,8 +934,17 @@ export class CustomerHeroChat {
     const { conversationId } = this.state;
     if (!conversationId) return;
 
+    // Per-message thumbs ("was this helpful?") goes to the dedicated
+    // `/feedback` endpoint — NOT `/rate`, which is the 1..5 CSAT survey. The
+    // transcript-read capability token (same one the history fetch uses) is
+    // required by the server to authorize the write against this conversation.
+    const readToken = this.storage?.getItem(`ch_conv_token_${chatbotId}`);
+    const url = readToken
+      ? `${apiBase}/api/chat/${chatbotId}/feedback?t=${encodeURIComponent(readToken)}`
+      : `${apiBase}/api/chat/${chatbotId}/feedback`;
+
     try {
-      await fetch(`${apiBase}/api/chat/${chatbotId}/rate`, {
+      await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, messageId, rating }),
