@@ -1,5 +1,42 @@
 # @customerhero/js
 
+## 2.4.1
+
+### Patch Changes
+
+- 8ac1eb5: Send the transcript-read capability token on action-approval and
+  workflow-approval decision requests.
+
+  The API now **requires** this token on the `/tool-calls/:id/decision` and
+  `/workflow-approvals/:id/decision` endpoints (approving executes a configured
+  action, so — like reading the transcript — a leaked `pendingId`/`approvalId`
+  alone must not authorize it). The client now appends the stored read token as
+  `?t=` on those requests (a query param, not a header, to satisfy the endpoint's
+  CORS preflight). Without this, approve/cancel would be rejected with 403 against
+  the updated API.
+
+- 7cadc63: Send per-message thumbs feedback to the dedicated `/feedback` endpoint with the
+  transcript-read capability token.
+
+  `rateMessage` ("was this answer helpful?" thumbs up/down) previously POSTed to
+  `/rate` — the 1..5 CSAT survey endpoint, which ignores the thumbs body and
+  rejected every request. It now targets the new `/chat/:chatbotId/feedback`
+  endpoint with `{ conversationId, messageId, rating }` and appends the stored
+  read token as `?t=` (a query param, to satisfy the endpoint's CORS preflight).
+  The API **requires** this token on `/feedback`, so an older embed pointed at the
+  old path simply no-ops as before — there is no regression.
+
+- d02af39: Send the transcript-read capability token on continuation chat sends.
+
+  The API now **requires** this token whenever a chat `POST /api/chat/:chatbotId`
+  includes a `conversationId` (continuing an existing conversation) — knowing only
+  the random `conversationId` previously let a visitor append to / read back
+  another visitor's conversation. The client now attaches the stored read token
+  (`ch_conv_token_<chatbotId>`, minted by the server on the first turn) as the
+  `X-CH-Read-Token` header on every continuation send. The first turn carries no
+  `conversationId` and needs no token. Without this, the second and later messages
+  of a conversation would be rejected with 403 against the updated API.
+
 ## 2.4.0
 
 ### Minor Changes
