@@ -521,12 +521,24 @@ export class CustomerHeroChat {
     const { chatbotId, apiBase } = this.state.config;
     let botMessageCreated = false;
 
+    // Security (API audit 2026-06-12 #1): continuing an existing conversation
+    // now requires the transcript-read token (the one the server minted on the
+    // first turn, stored under `ch_conv_token_<chatbotId>`). The first turn has
+    // no conversationId and needs no token. Sent as `X-CH-Read-Token`, matching
+    // the history-read endpoint.
+    const continuationReadToken = this.state.conversationId
+      ? this.storage?.getItem(`ch_conv_token_${chatbotId}`)
+      : null;
+
     try {
       const response = await fetch(`${apiBase}/api/chat/${chatbotId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "text/event-stream",
+          ...(continuationReadToken
+            ? { "X-CH-Read-Token": continuationReadToken }
+            : {}),
         },
         body: JSON.stringify({
           message: trimmed,

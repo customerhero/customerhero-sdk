@@ -65,6 +65,35 @@ describe("sendMessage over SSE", () => {
     expect(msgs[1].streaming).toBeFalsy();
   });
 
+  it("sends X-CH-Read-Token on continuation, but not on the first turn (#1)", async () => {
+    const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
+    const seenTokens: Array<string | null> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers as HeadersInit);
+        seenTokens.push(headers.get("X-CH-Read-Token"));
+        return sseStream([
+          { event: "metadata", data: JSON.stringify({ conversationId: "c1" }) },
+          {
+            event: "read-token",
+            data: JSON.stringify({ readToken: "tok_123" }),
+          },
+          { event: "token", data: JSON.stringify({ text: "ok" }) },
+          { event: "done", data: "{}" },
+        ]);
+      }),
+    );
+
+    await chat.sendMessage("first");
+    await chat.sendMessage("second");
+
+    // First turn carries no conversationId → no token header. The server mints
+    // the token (read-token event); the continuation send presents it.
+    expect(seenTokens[0]).toBeNull();
+    expect(seenTokens[1]).toBe("tok_123");
+  });
+
   it("user bubble is `sending` while fetch is pending, then `sent` once the response is accepted", async () => {
     const chat = new CustomerHeroChat({ chatbotId: "bot_x" });
 
