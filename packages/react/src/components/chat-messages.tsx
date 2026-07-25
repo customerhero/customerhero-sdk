@@ -405,7 +405,11 @@ function AttachmentTile({
         href={attachment.url}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ display: "inline-block", maxWidth: 220, lineHeight: 0 }}
+        style={{
+          display: "inline-block",
+          maxWidth: "min(220px, 100%)",
+          lineHeight: 0,
+        }}
         aria-label={attachment.filename ?? t("attachment_image_alt")}
       >
         <img
@@ -413,7 +417,7 @@ function AttachmentTile({
           alt={attachment.filename ?? t("attachment_image_alt")}
           style={{
             display: "block",
-            maxWidth: 220,
+            maxWidth: "100%",
             maxHeight: 220,
             width: "auto",
             height: "auto",
@@ -484,7 +488,10 @@ function tileLinkStyle(bg: string, border: string): CSSProperties {
     borderRadius: 12,
     textDecoration: "none",
     color: "inherit",
-    maxWidth: 260,
+    // Never wider than the bubble column it sits in — on a 320 px phone the
+    // flat 260 px would have poked out past the message's own max-width.
+    maxWidth: "min(260px, 100%)",
+    boxSizing: "border-box",
   };
 }
 
@@ -840,7 +847,16 @@ export function ChatMessages() {
 
   const containerStyle: CSSProperties = {
     flex: 1,
+    // `minHeight: 0` keeps this the element that scrolls: without it a flex
+    // child refuses to shrink below its content, so on a short (landscape)
+    // screen the list would push the composer off the bottom instead of
+    // scrolling internally.
+    minHeight: 0,
     overflowY: "auto",
+    // Don't hand a swipe that runs past the top/bottom of the list to the
+    // page behind the widget.
+    overscrollBehavior: "contain",
+    WebkitOverflowScrolling: "touch",
     padding: 16,
     display: "flex",
     flexDirection: "column",

@@ -102,6 +102,10 @@ function resolveConfig(
       side: clampInt(offsetUser.side, 0, 1000, DEFAULTS.offsetSide),
     },
     zIndex: clampInt(userConfig.zIndex, 0, 2_000_000_000, DEFAULTS.zIndex),
+    mobileFullscreen:
+      userConfig.mobileFullscreen ??
+      fetched?.mobileFullscreen ??
+      DEFAULTS.mobileFullscreen,
     // Defaults to true — the widget shows the attach button unless the
     // chatbot explicitly opts out via widget_config or the host passes
     // allowAttachments=false. Server still enforces the same flag at the

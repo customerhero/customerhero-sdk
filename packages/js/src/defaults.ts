@@ -19,7 +19,27 @@ export const DEFAULTS = {
   offsetBottom: 20,
   offsetSide: 20,
   zIndex: 99999,
+  mobileFullscreen: true,
 };
+
+// Viewport size at (or below) which the panel takes over the whole screen
+// instead of floating above the launcher. 480 px covers phones in portrait;
+// the height half of the query catches phones held in landscape, where a
+// 520 px-tall panel would otherwise be squeezed to a couple of visible
+// message rows.
+export const MOBILE_BREAKPOINT = 480;
+
+/**
+ * Media query that decides when the widget switches to its fullscreen
+ * (mobile) layout. Exported so hosts and the React bindings agree on a
+ * single definition of "mobile" rather than each picking a breakpoint.
+ *
+ * The height clause is gated on a coarse pointer so a short-but-wide desktop
+ * window (dev tools docked to the bottom, say) keeps the floating panel.
+ */
+export const MOBILE_LAYOUT_QUERY =
+  `(max-width: ${MOBILE_BREAKPOINT}px), ` +
+  `(max-height: ${MOBILE_BREAKPOINT}px) and (pointer: coarse)`;
 
 // Size preset → bubble diameter, panel dimensions, base font size.
 export const SIZE_PRESETS = {

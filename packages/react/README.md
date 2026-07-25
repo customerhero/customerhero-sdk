@@ -77,8 +77,19 @@ Pass an `identity` prop to link conversations to a user record in your system. U
 | `offset.bottom`          | `number`                            | Pixel offset from the bottom edge. 0–1000. Defaults to 20.                   |
 | `offset.side`            | `number`                            | Pixel offset from the side. 0–1000. Defaults to 20.                          |
 | `zIndex`                 | `number`                            | Z-index override. Defaults to 99999.                                         |
+| `mobileFullscreen`       | `boolean`                           | Fill the screen on phone-sized viewports. Defaults to true.                  |
 
 Dark colors are never auto-derived. Set them explicitly when enabling dark or auto modes.
+
+### Mobile behaviour
+
+At or below 480 px wide — and on short landscape phones — the panel covers the
+whole screen instead of floating above the launcher, the launcher fades out
+while it is open, and the page behind stops scrolling until it closes. The
+composer follows `window.visualViewport` so it rides above the iOS software
+keyboard, form controls render at 16 px so Safari doesn't zoom the page in on
+focus, and tap targets grow to 44 px on touch. Pass `mobileFullscreen={false}`
+to keep the floating panel at every size.
 
 See the full reference at [customerhero.app/docs](https://customerhero.app).
 

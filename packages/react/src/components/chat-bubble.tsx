@@ -2,11 +2,13 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 import { useEffectiveTheme } from "../use-effective-theme";
+import { useFullscreenLayout } from "../use-mobile-layout";
 
 export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
-  const { toggle, config, t, isRtl } = useChat();
+  const { toggle, config, t, isRtl, isOpen } = useChat();
   const reduced = useReducedMotion();
   const theme = useEffectiveTheme();
+  const fullscreen = useFullscreenLayout(embedded);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -14,7 +16,11 @@ export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const visible = mounted;
+  // A fullscreen panel covers the launcher anyway, and the header's close
+  // button already handles dismissal — fade the launcher out rather than
+  // leaving a dead button stacked underneath the panel.
+  const hidden = fullscreen && isOpen;
+  const visible = mounted && !hidden;
 
   // Flip the launcher corner for RTL locales — users of those languages
   // expect interactive chrome to mirror text direction.
@@ -88,6 +94,8 @@ export function ChatBubble({ embedded }: { embedded?: boolean } = {}) {
       style={style}
       dir={isRtl ? "rtl" : "ltr"}
       aria-label={t("open_chat")}
+      aria-hidden={hidden || undefined}
+      tabIndex={hidden ? -1 : undefined}
       onMouseEnter={(e) => {
         if (!reduced) e.currentTarget.style.transform = "scale(1.06)";
       }}

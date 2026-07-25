@@ -2,11 +2,13 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 import { useEffectiveTheme } from "../use-effective-theme";
+import { useCoarsePointer } from "../use-mobile-layout";
 
-export function ChatHeader() {
+export function ChatHeader({ fullscreen }: { fullscreen?: boolean } = {}) {
   const { config, close, reset, t } = useChat();
   const reduced = useReducedMotion();
   const theme = useEffectiveTheme();
+  const coarsePointer = useCoarsePointer();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -24,9 +26,14 @@ export function ChatHeader() {
   const headerStyle: CSSProperties = {
     background: theme.primary,
     padding: 16,
+    // A fullscreen panel owns the top of the screen, so the title row has to
+    // clear the status bar / notch itself. Resolves to plain 16 px unless the
+    // host page opted into `viewport-fit=cover`.
+    paddingTop: fullscreen ? "calc(16px + env(safe-area-inset-top, 0px))" : 16,
     display: "flex",
     alignItems: "center",
     gap: 12,
+    flexShrink: 0,
   };
 
   const avatarStyle: CSSProperties = {
@@ -59,7 +66,12 @@ export function ChatHeader() {
     color: "white",
     cursor: "pointer",
     opacity: 0.7,
-    padding: 4,
+    // 4 px around a 20 px glyph is a 28 px target — fine for a cursor, too
+    // small for a thumb. Pad it out to 44 px on touch.
+    padding: coarsePointer ? 12 : 4,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
 
   const isDark = theme.scheme === "dark";
