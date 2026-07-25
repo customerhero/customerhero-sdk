@@ -3,6 +3,13 @@ import type { PreChatField, PreChatSubmission } from "@customerhero/js";
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 import { useEffectiveTheme } from "../use-effective-theme";
+import { useBodyScrollLock } from "../use-body-scroll-lock";
+import {
+  NO_ZOOM_FONT_SIZE,
+  useCoarsePointer,
+  useFullscreenLayout,
+} from "../use-mobile-layout";
+import { useVisualViewport } from "../use-visual-viewport";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatSuggestions } from "./chat-suggestions";
@@ -83,6 +90,7 @@ function validateField(
 function PreChatFormView() {
   const { preChatForm, submitPreChatForm, cancelPreChatForm, config, t } =
     useChat();
+  const coarsePointer = useCoarsePointer();
   const [values, setValues] = useState<
     Record<string, string | boolean | undefined>
   >({});
@@ -141,7 +149,9 @@ function PreChatFormView() {
 
   const containerStyle: CSSProperties = {
     flex: 1,
+    minHeight: 0,
     overflowY: "auto",
+    overscrollBehavior: "contain",
     padding: 20,
     display: "flex",
     flexDirection: "column",
@@ -160,8 +170,10 @@ function PreChatFormView() {
     width: "100%",
     border: "1px solid #d4d4d8",
     borderRadius: 8,
-    padding: "8px 10px",
-    fontSize: 14,
+    padding: coarsePointer ? "10px 12px" : "8px 10px",
+    // 16 px on touch, or iOS Safari zooms the page in the moment the field
+    // takes focus — see NO_ZOOM_FONT_SIZE.
+    fontSize: coarsePointer ? NO_ZOOM_FONT_SIZE : 14,
     background: "white",
     color: "#111",
     boxSizing: "border-box",
@@ -172,13 +184,16 @@ function PreChatFormView() {
     gap: 8,
     marginTop: 8,
   };
+  // The desktop 10 px of padding around 14 px text lands a ~36 px button —
+  // fine for a cursor, under the 44 px a thumb wants. 13 px clears it.
+  const buttonPadding = coarsePointer ? "13px 16px" : "10px 14px";
   const submitStyle: CSSProperties = {
     flex: 1,
     background: config.primaryColor,
     color: "white",
     border: "none",
     borderRadius: 8,
-    padding: "10px 14px",
+    padding: buttonPadding,
     fontSize: 14,
     fontWeight: 600,
     cursor: submitting ? "not-allowed" : "pointer",
@@ -189,7 +204,7 @@ function PreChatFormView() {
     color: config.textColor,
     border: "1px solid #d4d4d8",
     borderRadius: 8,
-    padding: "10px 14px",
+    padding: buttonPadding,
     fontSize: 14,
     cursor: "pointer",
   };
@@ -342,9 +357,14 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
     useChat();
   const reduced = useReducedMotion();
   const theme = useEffectiveTheme();
+  const fullscreen = useFullscreenLayout(embedded);
   // Track render visibility separately to allow exit animation
   const [visible, setVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  // Only follow the visual viewport / lock the page while a fullscreen panel
+  // is actually on screen — a floating panel leaves the host page alone.
+  const viewport = useVisualViewport(fullscreen && shouldRender);
+  useBodyScrollLock(fullscreen && shouldRender);
 
   useEffect(() => {
     if (isOpen) {
@@ -386,7 +406,7 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
   // When embedded, dimensions are constrained by the parent container
   // instead of the viewport. Skip the calc(100vw) / calc(100vh) limits so
   // the parent's overflow rules win cleanly.
-  const style: CSSProperties = {
+  const floatingBox: CSSProperties = {
     position: embedded ? "absolute" : "fixed",
     bottom: panelBottom,
     [effectivePosition === "bottom-left" ? "left" : "right"]:
@@ -398,9 +418,6 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
       ? `calc(100% - ${panelBottom + 16}px)`
       : `calc(100vh - ${panelBottom + 30}px)`,
     borderRadius: radius,
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
     // In dark mode the default 0.15 opacity black shadow is invisible
     // against a dark page; switch to a stronger shadow plus a subtle 1px
     // light outline so the panel still reads as a separated surface.
@@ -408,6 +425,32 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
       theme.scheme === "dark"
         ? "0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)"
         : "0 8px 40px rgba(0,0,0,0.15)",
+  };
+
+  // Edge to edge on phones. Height comes from the visual viewport when the
+  // browser exposes it so the composer rides above the software keyboard
+  // instead of being buried under it; `inset: 0` is the fallback.
+  const fullscreenBox: CSSProperties = {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    top: viewport ? viewport.offsetTop : 0,
+    bottom: viewport ? "auto" : 0,
+    height: viewport ? viewport.height : "auto",
+    maxWidth: "none",
+    maxHeight: "none",
+    borderRadius: 0,
+    boxShadow: "none",
+  };
+
+  const style: CSSProperties = {
+    ...(fullscreen ? fullscreenBox : floatingBox),
+    overflow: "hidden",
+    // Keep a scroll that runs past the end of the message list from chaining
+    // into the host page behind the panel.
+    overscrollBehavior: "contain",
+    display: "flex",
+    flexDirection: "column",
     zIndex: config.zIndex,
     background: colors.background,
     color: colors.text,
@@ -415,9 +458,13 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     opacity: visible ? 1 : 0,
+    // Fullscreen enters as a sheet from the bottom edge; the floating panel
+    // keeps its scale-up from the launcher corner.
     transform: visible
       ? "translateY(0) scale(1)"
-      : "translateY(16px) scale(0.97)",
+      : fullscreen
+        ? "translateY(24px) scale(1)"
+        : "translateY(16px) scale(0.97)",
     transition: reduced ? "none" : "opacity 0.25s ease, transform 0.25s ease",
   };
 
@@ -425,8 +472,15 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
   const poweredStyle: CSSProperties = {
     textAlign: "center",
     padding: 6,
+    // Clear the home indicator on notched phones. env() resolves to 0 unless
+    // the host page opts into `viewport-fit=cover`, so this is a no-op
+    // everywhere else.
+    paddingBottom: fullscreen
+      ? "calc(6px + env(safe-area-inset-bottom, 0px))"
+      : 6,
     fontSize: 10,
     color: isDark ? "rgba(255,255,255,0.45)" : "#aaa",
+    flexShrink: 0,
   };
 
   const linkStyle: CSSProperties = {
@@ -436,8 +490,12 @@ export function ChatWindow({ embedded }: { embedded?: boolean } = {}) {
   };
 
   return (
-    <div style={style} dir={isRtl ? "rtl" : "ltr"}>
-      <ChatHeader />
+    <div
+      style={style}
+      dir={isRtl ? "rtl" : "ltr"}
+      data-customerhero-fullscreen={fullscreen ? "true" : undefined}
+    >
+      <ChatHeader fullscreen={fullscreen} />
       <IncidentBanner />
       {configError ? (
         <ConfigError title={t("unable_to_load")} message={configError} />

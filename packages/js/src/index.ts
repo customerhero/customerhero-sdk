@@ -1,5 +1,11 @@
 export { CustomerHeroChat } from "./client";
-export { DEFAULTS, SIZE_PRESETS, CORNER_RADIUS } from "./defaults";
+export {
+  DEFAULTS,
+  SIZE_PRESETS,
+  CORNER_RADIUS,
+  MOBILE_BREAKPOINT,
+  MOBILE_LAYOUT_QUERY,
+} from "./defaults";
 export {
   resolveScheme,
   effectiveColors,

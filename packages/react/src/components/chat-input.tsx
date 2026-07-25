@@ -16,6 +16,7 @@ import {
 import { useChat } from "../use-chat";
 import { useReducedMotion } from "../use-reduced-motion";
 import { useEffectiveTheme } from "../use-effective-theme";
+import { NO_ZOOM_FONT_SIZE, useCoarsePointer } from "../use-mobile-layout";
 
 const MAX_ATTACHMENTS = 3;
 
@@ -71,6 +72,7 @@ export function ChatInput() {
   const theme = useEffectiveTheme();
   const isDark = theme.scheme === "dark";
   const reduced = useReducedMotion();
+  const coarsePointer = useCoarsePointer();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [captureSupported, setCaptureSupported] = useState(false);
@@ -94,10 +96,15 @@ export function ChatInput() {
   // Auto-focus the text input when the composer mounts (the widget just
   // opened, or the pre-chat form was completed). Wait one frame so the
   // window's open animation doesn't fight focus on iOS Safari.
+  //
+  // Skipped on touch devices: focusing there summons the software keyboard,
+  // which would cover the welcome message and half the conversation before
+  // the visitor has read any of it. They tap the field when ready.
   useEffect(() => {
+    if (coarsePointer) return;
     const id = requestAnimationFrame(() => textInputRef.current?.focus());
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [coarsePointer]);
 
   // Auto-grow the textarea: collapse to "auto" so scrollHeight reflects the
   // intrinsic content height, then snap height back to that. The CSS
@@ -108,7 +115,8 @@ export function ChatInput() {
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
-  }, [value]);
+    // coarsePointer changes the font size, and with it the intrinsic height.
+  }, [value, coarsePointer]);
 
   // Drain any prefill set by an `open_with_prefill` trigger. Runs once per
   // pendingPrefill change so a new trigger after the first one still wins.
@@ -324,6 +332,9 @@ export function ChatInput() {
     display: "flex",
     flexDirection: "column",
     gap: 8,
+    // The composer keeps its height; the message list above it is what
+    // gives way on a short screen.
+    flexShrink: 0,
   };
 
   const rowStyle: CSSProperties = {
@@ -334,16 +345,19 @@ export function ChatInput() {
     gap: 8,
   };
 
-  // Cap auto-grow at ~6 lines of 14px text. Beyond this, the textarea
-  // becomes internally scrollable instead of pushing the whole composer
-  // upwards forever.
-  const TEXTAREA_MAX_HEIGHT = 140;
+  // Cap auto-grow at ~6 lines of text. Beyond this, the textarea becomes
+  // internally scrollable instead of pushing the whole composer upwards
+  // forever. Scaled with the font so touch devices still get six lines.
+  const TEXTAREA_MAX_HEIGHT = coarsePointer ? 160 : 140;
   const inputStyle: CSSProperties = {
     flex: 1,
     border: `1px solid ${theme.divider}`,
     borderRadius: 18,
     padding: "10px 16px",
-    fontSize: 14,
+    // Anything under 16 px makes iOS Safari zoom the page in when the field
+    // takes focus, leaving the visitor scrolled sideways inside a
+    // half-off-screen widget. See NO_ZOOM_FONT_SIZE.
+    fontSize: coarsePointer ? NO_ZOOM_FONT_SIZE : 14,
     lineHeight: 1.4,
     outline: "none",
     background: isDark ? "rgba(255,255,255,0.06)" : "#fafafa",
@@ -356,9 +370,12 @@ export function ChatInput() {
     boxSizing: "border-box",
   };
 
+  // Thumb-sized controls on touch, mouse-sized everywhere else.
+  const controlSize = coarsePointer ? 44 : 36;
+
   const sendButtonStyle: CSSProperties = {
-    width: 36,
-    height: 36,
+    width: controlSize,
+    height: controlSize,
     borderRadius: "50%",
     background: theme.primary,
     border: "none",
@@ -374,8 +391,8 @@ export function ChatInput() {
   };
 
   const iconButtonStyle = (disabled: boolean): CSSProperties => ({
-    width: 36,
-    height: 36,
+    width: controlSize,
+    height: controlSize,
     borderRadius: "50%",
     background: "transparent",
     border: "none",
@@ -409,7 +426,7 @@ export function ChatInput() {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    padding: "8px 12px",
+    padding: coarsePointer ? "12px 14px" : "8px 12px",
     background: "transparent",
     border: "none",
     borderRadius: 4,
@@ -558,6 +575,9 @@ export function ChatInput() {
           placeholder={config.placeholderText}
           style={inputStyle}
           disabled={isLoading || readOnly}
+          // Enter sends (Shift+Enter for a newline) — label the software
+          // keyboard's return key to match.
+          enterKeyHint="send"
         />
         <button
           onClick={handleSend}

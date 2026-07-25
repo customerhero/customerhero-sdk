@@ -61,6 +61,11 @@ export interface CustomerHeroChatConfig {
   /** Z-index override for sites whose overlays clip the widget. Defaults
    *  to 99999. Capped at 2_000_000_000. */
   zIndex?: number;
+  /** When true (the default), the chat panel fills the whole screen on
+   *  phone-sized viewports instead of floating above the launcher. Set to
+   *  false to keep the floating panel at every size. Ignored when the
+   *  widget is rendered `embedded`. */
+  mobileFullscreen?: boolean;
   /** When false, the input's attach button is hidden so visitors can't
    *  even attempt an upload (the server enforces the same flag). Defaults
    *  to true. Per-chatbot, sourced from the public widget config endpoint
@@ -99,6 +104,7 @@ export interface ResolvedConfig {
   };
   offset: { bottom: number; side: number };
   zIndex: number;
+  mobileFullscreen: boolean;
   allowAttachments: boolean;
 }
 

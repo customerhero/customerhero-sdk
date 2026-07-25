@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   CustomerHeroChat,
   DEFAULTS,
+  MOBILE_BREAKPOINT,
+  MOBILE_LAYOUT_QUERY,
   type CustomerHeroChatConfig,
   type IdentifyPayload,
 } from "../src";
@@ -11,6 +13,27 @@ describe("public exports", () => {
     expect(typeof CustomerHeroChat).toBe("function");
     expect(DEFAULTS.apiBase).toMatch(/^https?:\/\//);
     expect(DEFAULTS.position).toBe("bottom-right");
+  });
+
+  it("exposes the mobile layout breakpoint and query", () => {
+    expect(MOBILE_BREAKPOINT).toBe(480);
+    expect(MOBILE_LAYOUT_QUERY).toContain(`max-width: ${MOBILE_BREAKPOINT}px`);
+    expect(MOBILE_LAYOUT_QUERY).toContain("pointer: coarse");
+  });
+});
+
+describe("mobileFullscreen resolution", () => {
+  it("defaults to fullscreen on mobile", () => {
+    const chat = new CustomerHeroChat({ chatbotId: "bot_test" });
+    expect(chat.getState().config.mobileFullscreen).toBe(true);
+  });
+
+  it("lets the host opt out", () => {
+    const chat = new CustomerHeroChat({
+      chatbotId: "bot_test",
+      mobileFullscreen: false,
+    });
+    expect(chat.getState().config.mobileFullscreen).toBe(false);
   });
 });
 

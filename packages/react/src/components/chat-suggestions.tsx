@@ -25,6 +25,7 @@ export function ChatSuggestions() {
     flexWrap: "wrap",
     gap: 6,
     justifyContent: "flex-end",
+    flexShrink: 0,
   };
 
   const chipStyle: CSSProperties = {

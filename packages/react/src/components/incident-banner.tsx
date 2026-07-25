@@ -108,6 +108,8 @@ export function IncidentBanner() {
     fontSize: 13,
     lineHeight: 1.45,
     boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.04)",
+    // Hold full height against the scrolling message list below it.
+    flexShrink: 0,
   };
 
   const iconBadge: CSSProperties = {
